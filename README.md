@@ -4,6 +4,22 @@ This repository contains multiple services configured to run using Docker. Below
 
 ---
 
+## Run or Stop All Services
+
+### Run All Services
+To start all services defined in this repository:
+```bash
+docker compose -f authentik/docker-compose.yml -f grafana/docker-compose.yml -f influxdb/docker-compose.yml -f it-tools/docker-compose.yml -f servarr/docker-compose.yml -f speedtest-tracker/docker-compose.yml up -d
+```
+
+### Stop All Services
+To stop all services:
+```bash
+docker compose -f authentik/docker-compose.yml -f grafana/docker-compose.yml -f influxdb/docker-compose.yml -f it-tools/docker-compose.yml -f servarr/docker-compose.yml -f speedtest-tracker/docker-compose.yml down
+```
+
+---
+
 ## Services Overview
 
 Each service has its own `.env` file for configuration. Ensure these files are properly set up before running the services. The `.env` files are excluded from version control (`.gitignore`) for security reasons. Make sure to back them up securely.
