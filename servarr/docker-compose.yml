@@ -1,0 +1,189 @@
+services:
+
+# -----------------------------------------------------------
+# Gluetun Docker Compose Configuration
+# Description: VPN client for Docker containers
+# -----------------------------------------------------------
+  gluetun:
+    image: qmcgaw/gluetun
+    container_name: gluetun
+    cap_add:
+      - NET_ADMIN
+    devices:
+      - /dev/net/tun:/dev/net/tun
+    environment:
+      - VPN_SERVICE_PROVIDER=${VPN_SERVICE_PROVIDER}
+      - VPN_TYPE=${VPN_TYPE}
+      - WIREGUARD_PRIVATE_KEY=${WIREGUARD_PRIVATE_KEY}
+      - SERVER_COUNTRIES=${SERVER_COUNTRIES}
+    ports:
+      - 7878:7878                 # Radarr
+      - 8989:8989                 # Sonarr
+      - 9696:9696                 # Prowlarr
+      - 8080:8080                 # qBittorrent WebUI
+      - 6881:6881                 # qBittorrent
+      - 6881:6881/udp             # qBittorrent
+      - "${PORT:-8191}:8191"      # FlareSolverr
+      - 6767:6767                 # Bazarr
+      - 6969:6969                 # Whisparr
+    restart: always
+
+# -----------------------------------------------------------
+# Flaresolverr Docker Compose Configuration
+# Description: Bypass CAPTCHAs for automated downloads
+# -----------------------------------------------------------
+  flaresolverr:
+    image: ghcr.io/flaresolverr/flaresolverr:latest
+    container_name: flaresolverr
+    network_mode: "service:gluetun" # Uses VPN network
+    environment:
+      - LOG_LEVEL=${LOG_LEVEL}
+      - LOG_HTML=${LOG_HTML}
+      - CAPTCHA_SOLVER=${CAPTCHA_SOLVER}
+      - TZ=${TZ}
+    restart: always
+    depends_on:
+      - gluetun
+
+# -----------------------------------------------------------
+# qBitTorrent Docker Compose Configuration
+# Description: Bittorrent client for downloading and managing torrents
+# -----------------------------------------------------------
+  qbittorrent:
+    image: ghcr.io/hotio/qbittorrent
+    container_name: qbittorrent
+    network_mode: "service:gluetun" # Uses VPN network
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - UMASK=${UMASK}
+      - TZ=${TZ}
+      - WEBUI_PORTS=${WEBUI_PORTS}
+      - TORRENTING_PORT=${TORRENTING_PORT}
+    volumes:
+      - /media/servarr/qbittorrent/config:/config
+      - /mnt/qnap/servarr:/data
+    restart: always
+    depends_on:
+      - gluetun
+
+# -----------------------------------------------------------
+# Radarr Docker Compose Configuration
+# Description: Movie collection manager for automated downloads
+# -----------------------------------------------------------
+  radarr:
+    image: ghcr.io/hotio/radarr
+    container_name: radarr
+    network_mode: "service:gluetun" # Uses VPN network
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - UMASK=${UMASK}
+      - TZ=${TZ}
+    volumes:
+      - /media/servarr/radarr/config:/config
+      - /mnt/qnap/servarr:/data
+    restart: always
+    depends_on:
+      - gluetun
+
+# -----------------------------------------------------------
+# Sonarr Docker Compose Configuration
+# Description: TV series collection manager for automated downloads
+# -----------------------------------------------------------
+  sonarr:
+    image: ghcr.io/hotio/sonarr
+    container_name: sonarr
+    network_mode: "service:gluetun" # Uses VPN network
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - UMASK=${UMASK}
+      - TZ=${TZ}
+    volumes:
+      - /media/servarr/sonarr/config:/config
+      - /mnt/qnap/servarr:/data
+    restart: always
+    depends_on:
+      - gluetun
+
+# -----------------------------------------------------------
+# Prowlarr Docker Compose Configuration
+# Description: Indexer manager for automated downloads
+# -----------------------------------------------------------
+  prowlarr:
+    image: ghcr.io/hotio/prowlarr
+    container_name: prowlarr
+    network_mode: "service:gluetun" # Uses VPN network
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - UMASK=${UMASK}
+      - TZ=${TZ}
+    volumes:
+      - /media/servarr/prowlarr/config:/config
+    restart: unless-stopped
+    depends_on:
+      - gluetun
+
+# -----------------------------------------------------------
+# Bazarr Docker Compose Configuration
+# Description: Subtitle management for movies and TV shows
+# -----------------------------------------------------------
+  bazarr:
+    image: ghcr.io/hotio/bazarr
+    container_name: bazarr
+    network_mode: "service:gluetun" # Uses VPN network
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - UMASK=${UMASK}
+      - TZ=${TZ}
+    volumes:
+      - /media/servarr/bazarr/config:/config
+      - /mnt/qnap/servarr:/data
+    restart: always
+    depends_on:
+      - gluetun
+
+# -----------------------------------------------------------
+# Whisparr Docker Compose Configuration
+# Description: Music collection manager for automated downloads
+# -----------------------------------------------------------
+  whisparr:
+    image: ghcr.io/hotio/whisparr
+    container_name: whisparr
+    network_mode: "service:gluetun" # Uses VPN network
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - UMASK=${UMASK}
+      - TZ=${TZ}
+    volumes:
+      - /media/servarr/whisparr/config:/config
+      - /mnt/qnap/servarr:/data
+    restart: always
+    depends_on:
+      - gluetun
+
+# -----------------------------------------------------------
+# Jellyfin Docker Compose Configuration
+# Description: Media server for streaming movies and TV shows
+# -----------------------------------------------------------
+  jellyfin:
+    image: ghcr.io/hotio/jellyfin
+    container_name: jellyfin
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - UMASK=${UMASK}
+      - TZ=${TZ}
+    volumes:
+      - /media/servarr/jellyfin/config:/config
+      - /mnt/qnap/servarr:/data
+    ports:
+      - 8096:8096
+      - 8920:8920 #optional
+      - 7359:7359/udp #optional
+      - 1900:1900/udp #optional
+    restart: always

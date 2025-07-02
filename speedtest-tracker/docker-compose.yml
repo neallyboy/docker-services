@@ -1,0 +1,42 @@
+services:
+    speedtest-tracker:
+        image: lscr.io/linuxserver/speedtest-tracker:latest
+        restart: always
+        container_name: speedtest-tracker
+        ports:
+            - 8084:80
+            - 8443:443
+        environment:
+            - PUID=${PUID}
+            - PGID=${PGID}
+            - APP_KEY=${APP_KEY}
+            - DB_CONNECTION=${DB_CONNECTION}
+            - DB_HOST=${DB_HOST}
+            - DB_PORT=${DB_PORT}
+            - DB_DATABASE=${DB_DATABASE}
+            - DB_USERNAME=${DB_USERNAME}
+            - DB_PASSWORD=${DB_PASSWORD}
+            - SPEEDTEST_SCHEDULE=${SPEEDTEST_SCHEDULE}
+        volumes:
+            - /path/to/data:/config
+            - /path/to-custom-ssl-keys:/config/keys
+        depends_on:
+            - db
+    db:
+        image: mariadb:11
+        container_name: speedtest-tracker-db
+        restart: always
+        environment:
+            - MYSQL_DATABASE=${MYSQL_DATABASE}
+            - MYSQL_USER=${MYSQL_USER}
+            - MYSQL_PASSWORD=${MYSQL_PASSWORD}
+            - MYSQL_RANDOM_ROOT_PASSWORD=${MYSQL_RANDOM_ROOT_PASSWORD}
+        volumes:
+            - speedtest-db:/var/lib/mysql
+        healthcheck:
+            test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+            interval: 5s
+            retries: 3
+            timeout: 5s
+volumes:
+  speedtest-db:
