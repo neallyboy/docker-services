@@ -176,6 +176,39 @@ services:
       - gluetun
 
 # -----------------------------------------------------------
+# Notifiarr Docker Compose Configuration
+# Description: Notification service for various events
+# -----------------------------------------------------------
+  notifiarr:
+    container_name: notifiarr
+    hostname: notifiarr
+    image: golift/notifiarr
+    restart: unless-stopped
+    ports:
+      - "5454:5454"
+    volumes:
+      - /media/servarr/notifiarr/config:/config
+      - /var/run/utmp:/var/run/utmp
+      - /etc/machine-id:/etc/machine-id
+
+# -----------------------------------------------------------
+# Configarr Docker Compose Configuration
+# Description: Configuration management for Servarr applications
+# -----------------------------------------------------------
+  # configarr:
+  #   image: ghcr.io/raydak-labs/configarr:latest
+  #   container_name: configarr
+  #   user: ${PUID}:${PGID} # Optional, defaults to root:root
+  #   environment:
+  #     - TZ=${TZ}
+  #   volumes:
+  #     - /media/servarr/configarr/config:/app/config # Contains the config.yml and secrets.yml
+  #     - /media/servarr/configarr/dockerrepos:/app/repos # Cache repositories
+  #     - /media/servarr/configarr/custom/cfs:/app/cfs # Optional if custom formats locally provided
+  #     - /media/servarr/configarr/custom/templates:/app/templates # Optional if custom templates
+    # restart: "no" # optional make sure this is set to no or removed. Default is no
+
+# -----------------------------------------------------------
 # Jellyfin Docker Compose Configuration
 # Description: Media server for streaming movies and TV shows
 # -----------------------------------------------------------
