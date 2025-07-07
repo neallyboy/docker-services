@@ -36,6 +36,7 @@ services:
       - "${PORT:-8191}:8191"      # FlareSolverr
       - 6767:6767                 # Bazarr
       - 6969:6969                 # Whisparr
+    #  - 5055:5055                 # Jellyseerr
     restart: always
 
 # -----------------------------------------------------------
@@ -215,6 +216,49 @@ services:
       - /media/servarr/notifiarr/config:/config
       - /var/run/utmp:/var/run/utmp
       - /etc/machine-id:/etc/machine-id
+
+# -----------------------------------------------------------
+# Overseerr Docker Compose Configuration
+# Description: Request management for media requests
+# -----------------------------------------------------------
+  # overseerr:
+  #   container_name: overseerr
+  #   image: ghcr.io/hotio/overseerr
+  #   network_mode: "service:gluetun" # Uses VPN network
+  #   # ports:
+  #   #   - "5055:5055"
+  #   environment:
+  #     - PUID=${PUID}
+  #     - PGID=${PGID}
+  #     - UMASK=${UMASK}
+  #     - TZ=${TZ}
+  #   volumes:
+  #     - /media/servarr/overseerr/config:/config
+  #   restart: always
+  #   depends_on:
+  #     - gluetun
+
+# -----------------------------------------------------------
+# Jellyseerr Docker Compose Configuration
+# Description: Media request management for Jellyfin
+# -----------------------------------------------------------
+
+  jellyseerr:
+    container_name: jellyseerr
+    image: ghcr.io/hotio/jellyseerr
+    # network_mode: "service:gluetun" # Uses VPN network
+    ports:
+      - "5055:5055"
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - UMASK=${UMASK}
+      - TZ=${TZ}
+    volumes:
+      - /media/servarr/jellyseerr/config:/config
+    restart: always
+    # depends_on:
+    #   - gluetun
 
 # -----------------------------------------------------------
 # Configarr Docker Compose Configuration
