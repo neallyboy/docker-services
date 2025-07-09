@@ -1,10 +1,12 @@
 ---
-- hosts: all
+- hosts: "{{ target_group }}"
   become: true
   vars:
     ansible_python_interpreter: auto_silent
   tasks:
     - name: Update apt packages
+      debug:
+        msg: "Running on {{ inventory_hostname }} in group {{ target_group }}"
       apt:
         update_cache: yes
         upgrade: dist
