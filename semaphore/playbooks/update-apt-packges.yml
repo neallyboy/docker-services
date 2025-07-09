@@ -4,8 +4,10 @@
   vars:
     ansible_python_interpreter: auto_silent
   tasks:
-    - name: Update apt packages
+    - name: Update package list
       apt:
         update_cache: yes
+    - name: Upgrade all packages
+      apt:
         upgrade: dist
       register: apt_update
