@@ -16,4 +16,6 @@
 
     - name: Wait for the container to come back online
       wait_for_connection:
-        timeout: 300
+        timeout: 600  # Increase timeout to 10 minutes
+        delay: 30     # Wait 30 seconds before retrying
+        retries: 10   # Retry up to 10 times
