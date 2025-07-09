@@ -1,0 +1,18 @@
+---
+- hosts: "{{ target_group }}"
+  become: true
+  vars:
+    ansible_python_interpreter: auto_silent
+  tasks:
+    - name: Ensure the host is reachable
+      ping:
+
+    - name: Reboot the LXC container
+      command: shutdown -r now
+      async: 1
+      poll: 0
+      register: reboot_command
+
+    - name: Wait for the container to come back online
+      wait_for_connection:
+        timeout: 300
