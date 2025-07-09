@@ -4,9 +4,11 @@
   vars:
     ansible_python_interpreter: auto_silent
   tasks:
-    - name: Update apt packages
+    - name: Debug target group and host
       debug:
         msg: "Running on {{ inventory_hostname }} in group {{ target_group }}"
+
+    - name: Update apt packages
       apt:
         update_cache: yes
         upgrade: dist
