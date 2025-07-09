@@ -19,5 +19,9 @@
         timeout: 600  # Wait up to 10 minutes for the connection
       register: connection_status
       until: connection_status is success
-      retries: 10  # Retry up to 10 times
+      retries: 20  # Retry up to 20 times
       delay: 30    # Wait 30 seconds between retries
+
+    - name: Debug connection status
+      debug:
+        var: connection_status
