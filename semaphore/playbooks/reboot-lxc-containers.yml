@@ -3,6 +3,7 @@
   become: true
   vars:
     ansible_python_interpreter: auto_silent
+  serial: 1  # Process one host at a time
   tasks:
     - name: Ensure the host is reachable
       ping:

@@ -11,9 +11,9 @@ it-tools.lan.digitalflex.ca
 meshcentral.lan.digitalflex.ca
 nginx.lan.digitalflex.ca
 pihole.lan.digitalflex.ca
-portainer.lan.digitalflex.ca
 prometheus.lan.digitalflex.ca
 stirling-pdf.lan.digitalflex.ca
+portainer.lan.digitalflex.ca
 
 [docker]
 auth.lan.digitalflex.ca
