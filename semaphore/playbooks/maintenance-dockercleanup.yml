@@ -1,13 +1,4 @@
 - hosts: "{{ target_group }}"
-  vars:
-    ansible_python_interpreter: auto_silent
   tasks:
-    - name: Prune non-dangling, and dangling images
-      community.docker.docker_prune:
-        containers: false
-        images: true
-        images_filters:
-          dangling: false
-        networks: false
-        volumes: false
-        builder_cache: false
+    - name: Prune unused Docker images
+      shell: docker image prune -a -f
