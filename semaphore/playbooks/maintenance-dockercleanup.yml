@@ -1,4 +1,6 @@
 - hosts: "{{ target_group }}"
+  vars:
+    ansible_python_interpreter: auto_silent
   tasks:
     - name: Prune unused Docker images
       shell: docker image prune -a -f
