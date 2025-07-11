@@ -1,0 +1,15 @@
+services:
+  whatsupdocker:
+    image: getwud/wud
+    container_name: wud
+    environment:
+      - TZ=America/Toronto
+      - WUD_AUTH_BASIC_ADMIN_USER=${WUD_AUTH_BASIC_ADMIN_USER}
+      - WUD_AUTH_BASIC_ADMIN_HASH=${WUD_AUTH_BASIC_ADMIN_HASH}
+      - WUD_REGISTRY_LSCR_PRIVATE_USERNAME=${WUD_REGISTRY_LSCR_PRIVATE_USERNAME}
+      - WUD_REGISTRY_LSCR_PRIVATE_TOKEN=${WUD_REGISTRY_LSCR_PRIVATE_TOKEN}
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    ports:
+      - 3002:3000
+    restart: unless-stopped

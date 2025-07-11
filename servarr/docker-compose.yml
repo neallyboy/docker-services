@@ -186,7 +186,7 @@ services:
 # Description: Music collection manager for automated downloads
 # -----------------------------------------------------------
   whisparr:
-    image: ghcr.io/hotio/whisparr:latest
+    image: ghcr.io/hotio/whisparr
     container_name: whisparr
     network_mode: "service:gluetun" # Uses VPN network
     environment:
