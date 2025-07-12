@@ -22,6 +22,9 @@ services:
             - /path/to-custom-ssl-keys:/config/keys
         depends_on:
             - db
+        labels:
+            - 'wud.display.name=speedtest-tracker'
+            - 'wud.link.template=https://github.com/linuxserver/docker-speedtest-tracker/releases/tag/$${major}.$${minor}.$${patch}'
     db:
         image: mariadb:11
         container_name: speedtest-tracker-db
@@ -38,5 +41,7 @@ services:
             interval: 5s
             retries: 3
             timeout: 5s
+        labels:
+            - 'wud.display.name=speedtest-tracker-mariadb'
 volumes:
   speedtest-db:
