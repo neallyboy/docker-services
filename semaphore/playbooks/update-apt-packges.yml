@@ -27,6 +27,13 @@
       shell: df -h / | tail -1
       register: disk_usage
     
-    - name: Show disk usage
+    - name: Check Jellyfin cache size
+      shell: du -sh /media/servarr/jellyfin/config/cache/ 2>/dev/null || echo "Cache not accessible"
+      register: jellyfin_cache_size
+      ignore_errors: yes
+    
+    - name: Show disk usage and cache info
       debug:
-        msg: "Disk usage after updates: {{ disk_usage.stdout }}"
+        msg: 
+          - "Disk usage after updates: {{ disk_usage.stdout }}"
+          - "Jellyfin cache size: {{ jellyfin_cache_size.stdout }}"
