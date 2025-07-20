@@ -12,3 +12,21 @@
       retries: 5
       delay: 30
       until: apt_update is succeeded
+    
+    - name: Clean apt cache to free disk space
+      apt:
+        autoclean: yes
+      when: apt_update is succeeded
+    
+    - name: Remove orphaned packages
+      apt:
+        autoremove: yes
+      when: apt_update is succeeded
+    
+    - name: Display disk usage after cleanup
+      shell: df -h / | tail -1
+      register: disk_usage
+    
+    - name: Show disk usage
+      debug:
+        msg: "Disk usage after updates: {{ disk_usage.stdout }}"
