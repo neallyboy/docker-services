@@ -301,3 +301,27 @@ services:
       - 7359:7359/udp #optional
       - 1900:1900/udp #optional
     restart: always
+
+# -----------------------------------------------------------
+# Plex Docker Compose Configuration
+# Description: Media server for streaming movies and TV shows
+# -----------------------------------------------------------
+  plex:
+    container_name: plex
+    image: ghcr.io/hotio/plex
+    ports:
+      - "32400:32400"
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - UMASK=${UMASK}
+      - TZ=${TZ}
+      - PLEX_CLAIM_TOKEN=${PLEX_CLAIM_TOKEN}
+      - PLEX_ADVERTISE_URL=${PLEX_ADVERTISE_URL}
+      - PLEX_NO_AUTH_NETWORKS=${PLEX_NO_AUTH_NETWORKS}
+      - PLEX_BETA_INSTALL=${PLEX_BETA_INSTALL}
+      - PLEX_PURGE_CODECS=${PLEX_PURGE_CODECS}
+    volumes:
+      - /media/servarr/plex/config:/config
+      - /media/servarr/plex/transcode:/transcode
+      - /mnt/qnap/servarr:/data
