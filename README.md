@@ -28,7 +28,12 @@ Each service has its own `.env` file for configuration. Ensure these files are p
 
 ### 1. **Authentik**
 - **Purpose**: Identity provider for managing authentication and authorization.
+- **Update Command**:
+  ```bash
+  docker compose -f authentik/docker-compose.yml pull
+  ```
 - **Start Command**:
+  The start command can be performed after the update command. The containers will be re-created using the latest local container
   ```bash
   docker compose -f authentik/docker-compose.yml up -d
   ```
@@ -41,7 +46,12 @@ Each service has its own `.env` file for configuration. Ensure these files are p
 
 ### 2. **Grafana**
 - **Purpose**: Monitoring and visualization tool for metrics and logs.
+- **Update Command**:
+  ```bash
+  docker compose -f grafana/docker-compose.yml pull
+  ```
 - **Start Command**:
+  The start command can be performed after the update command. The containers will be re-created using the latest local container
   ```bash
   docker compose -f grafana/docker-compose.yml up -d
   ```
@@ -54,7 +64,12 @@ Each service has its own `.env` file for configuration. Ensure these files are p
 
 ### 3. **InfluxDB**
 - **Purpose**: Time-series database for storing metrics and events.
+- **Update Command**:
+  ```bash
+  docker compose -f influxdb/docker-compose.yml pull
+  ```
 - **Start Command**:
+  The start command can be performed after the update command. The containers will be re-created using the latest local container
   ```bash
   docker compose -f influxdb/docker-compose.yml up -d
   ```
@@ -67,7 +82,12 @@ Each service has its own `.env` file for configuration. Ensure these files are p
 
 ### 4. **IT Tools**
 - **Purpose**: Collection of tools for IT management and troubleshooting.
+- **Update Command**:
+  ```bash
+  docker compose -f it-tools/docker-compose.yml pull
+  ```
 - **Start Command**:
+  The start command can be performed after the update command. The containers will be re-created using the latest local container
   ```bash
   docker compose -f it-tools/docker-compose.yml up -d
   ```
@@ -80,7 +100,12 @@ Each service has its own `.env` file for configuration. Ensure these files are p
 
 ### 5. **Servarr**
 - **Purpose**: Suite of tools for managing media libraries (e.g., Sonarr, Radarr).
+- **Update Command**:
+  ```bash
+  docker compose -f servarr/docker-compose.yml pull
+  ```
 - **Start Command**:
+  The start command can be performed after the update command. The containers will be re-created using the latest local container
   ```bash
   docker compose -f servarr/docker-compose.yml up -d
   ```
@@ -93,7 +118,12 @@ Each service has its own `.env` file for configuration. Ensure these files are p
 
 ### 6. **Speedtest Tracker**
 - **Purpose**: Monitors and logs internet speed tests.
+- **Update Command**:
+  ```bash
+  docker compose -f speedtest-tracker/docker-compose.yml pull
+  ```
 - **Start Command**:
+  The start command can be performed after the update command. The containers will be re-created using the latest local container
   ```bash
   docker compose -f speedtest-tracker/docker-compose.yml up -d
   ```
