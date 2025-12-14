@@ -60,23 +60,23 @@ services:
 # qBitTorrent Docker Compose Configuration
 # Description: Bittorrent client for downloading and managing torrents
 # -----------------------------------------------------------
-  qbittorrent:
-    image: ghcr.io/hotio/qbittorrent
-    container_name: qbittorrent
-    network_mode: "service:gluetun" # Uses VPN network
-    environment:
-      - PUID=${PUID}
-      - PGID=${PGID}
-      - UMASK=${UMASK}
-      - TZ=${TZ}
-      - WEBUI_PORTS=${WEBUI_PORTS}
-      - TORRENTING_PORT=${TORRENTING_PORT}
-    volumes:
-      - /media/servarr/qbittorrent/config:/config
-      - /mnt/qnap/servarr:/data
-    restart: always
-    depends_on:
-      - gluetun
+  # qbittorrent:
+  #   image: ghcr.io/hotio/qbittorrent
+  #   container_name: qbittorrent
+  #   network_mode: "service:gluetun" # Uses VPN network
+  #   environment:
+  #     - PUID=${PUID}
+  #     - PGID=${PGID}
+  #     - UMASK=${UMASK}
+  #     - TZ=${TZ}
+  #     - WEBUI_PORTS=${WEBUI_PORTS}
+  #     - TORRENTING_PORT=${TORRENTING_PORT}
+  #   volumes:
+  #     - /media/servarr/qbittorrent/config:/config
+  #     - /mnt/qnap/servarr:/data
+  #   restart: always
+  #   depends_on:
+  #     - gluetun
 
 # -----------------------------------------------------------
 # Sabnzbd Docker Compose Configuration
@@ -185,21 +185,21 @@ services:
 # Whisparr Docker Compose Configuration
 # Description: Music collection manager for automated downloads
 # -----------------------------------------------------------
-  whisparr:
-    image: ghcr.io/hotio/whisparr
-    container_name: whisparr
-    network_mode: "service:gluetun" # Uses VPN network
-    environment:
-      - PUID=${PUID}
-      - PGID=${PGID}
-      - UMASK=${UMASK}
-      - TZ=${TZ}
-    volumes:
-      - /media/servarr/whisparr/config:/config
-      - /mnt/qnap/servarr:/data
-    restart: always
-    depends_on:
-      - gluetun
+  # whisparr:
+  #   image: ghcr.io/hotio/whisparr
+  #   container_name: whisparr
+  #   network_mode: "service:gluetun" # Uses VPN network
+  #   environment:
+  #     - PUID=${PUID}
+  #     - PGID=${PGID}
+  #     - UMASK=${UMASK}
+  #     - TZ=${TZ}
+  #   volumes:
+  #     - /media/servarr/whisparr/config:/config
+  #     - /mnt/qnap/servarr:/data
+  #   restart: always
+  #   depends_on:
+  #     - gluetun
 
 # -----------------------------------------------------------
 # Notifiarr Docker Compose Configuration
