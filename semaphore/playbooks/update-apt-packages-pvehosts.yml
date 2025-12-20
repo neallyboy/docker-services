@@ -1,3 +1,42 @@
+    - name: Show current user (whoami)
+      ansible.builtin.shell: whoami
+      register: whoami_result
+
+    - name: Debug whoami
+      ansible.builtin.debug:
+        var: whoami_result.stdout
+
+    - name: Show user info (id -a)
+      ansible.builtin.shell: id -a
+      register: id_result
+
+    - name: Debug id -a
+      ansible.builtin.debug:
+        var: id_result.stdout
+
+    - name: Show environment variables
+      ansible.builtin.shell: env
+      register: env_result
+
+    - name: Debug environment variables
+      ansible.builtin.debug:
+        var: env_result.stdout_lines
+
+    - name: Show apt binary location
+      ansible.builtin.shell: which apt
+      register: which_apt_result
+
+    - name: Debug which apt
+      ansible.builtin.debug:
+        var: which_apt_result.stdout
+
+    - name: Show apt config dump
+      ansible.builtin.shell: apt-config dump
+      register: apt_config_result
+
+    - name: Debug apt config dump
+      ansible.builtin.debug:
+        var: apt_config_result.stdout_lines
 ---
     - name: Update Proxmox nodes
       hosts: proxmox
