@@ -12,13 +12,14 @@
         update_cache: yes
 
     - name: Check for upgradable packages
-      shell: apt list --upgradable 2>/dev/null | grep -v "Listing..."
+      shell: apt-get -s upgrade | grep "^Inst" || true
       register: upgrade_check
       changed_when: false
+      failed_when: false
 
     - name: Set upgrade_needed fact
       set_fact:
-        upgrade_needed: "{{ upgrade_check.stdout_lines | length > 0 }}"
+        upgrade_needed: "{{ upgrade_check.stdout != '' }}"
 
     - name: Upgrade packages if needed
       apt:
