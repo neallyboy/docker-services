@@ -1,8 +1,14 @@
 [proxmox]
+# Define Proxmox VE hosts with their respective IP addresses.
 pve01 ansible_host=192.168.10.88
 # pve02 ansible_host=192.168.10.33
 # pve03 ansible_host=192.168.10.99
 # pbs ansible_host=192.168.10.160
+
+# The following group variable sets the Python interpreter for all hosts in the [proxmox] group.
+# This avoids Python version warnings and makes it easy to change the interpreter in one place.
+[proxmox:vars]
+ansible_python_interpreter=/usr/bin/python3
 
 [lxc]
 homeassistant.lan.digitalflex.ca

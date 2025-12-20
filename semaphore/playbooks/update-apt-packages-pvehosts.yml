@@ -10,12 +10,12 @@
         update_cache: true
         cache_valid_time: 3600
 
-    - name: List upgradable packages
+    - name: Gather upgradable packages
       ansible.builtin.shell: apt list --upgradable | sed '/Listing.../d'
       register: apt_list_upgradable_result
       changed_when: false
 
-    - name: Show upgradable packages
+    - name: Display upgradable packages
       ansible.builtin.debug:
         var: apt_list_upgradable_result.stdout_lines
 
@@ -24,4 +24,29 @@
         upgrade: full
         autoremove: true
         autoclean: true
+
+    - name: Check if reboot is required
+      ansible.builtin.stat:
+        path: /var/run/reboot-required
+      register: reboot_required_file
+
+    - name: Reboot if required
+      ansible.builtin.reboot:
+        msg: "Reboot initiated by Ansible after upgrades."
+        reboot_timeout: 900
+      when: reboot_required_file.stat.exists
+
+    - name: Wait for node to become reachable after reboot
+      ansible.builtin.wait_for_connection:
+        timeout: 600
+      when: reboot_required_file.stat.exists
+
+    - name: Wait for Ceph cluster health to be OK
+      ansible.builtin.shell: ceph health
+      register: ceph_health_result
+      until: ceph_health_result.stdout is search('HEALTH_OK')
+      retries: 30
+      delay: 10
+      changed_when: false
+      when: inventory_hostname == groups['proxmox'][-1] or inventory_hostname != groups['proxmox'][-1]
 
