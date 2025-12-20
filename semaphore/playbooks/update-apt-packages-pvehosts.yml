@@ -1,0 +1,60 @@
+---
+- name: Sequentially update and upgrade PVE nodes with Ceph health check
+  hosts: proxmox
+  serial: 1
+  become: yes
+  vars:
+    ceph_health_command: 'ceph health'
+    ceph_health_ok: 'HEALTH_OK'
+  tasks:
+    - name: Update apt cache
+      apt:
+        update_cache: yes
+
+    - name: Check for upgradable packages
+      apt:
+        upgrade: 'dist'
+        update_cache: no
+        simulate: yes
+      register: upgrade_check
+
+    - name: Set upgrade_needed fact
+      set_fact:
+        upgrade_needed: "{{ upgrade_check.stdout_lines | select('search', 'Inst') | list | length > 0 }}"
+
+    - name: Upgrade packages if needed
+      apt:
+        upgrade: 'dist'
+        update_cache: no
+      when: upgrade_needed
+
+#    - name: Check if reboot is required
+#      stat:
+#        path: /var/run/reboot-required
+#      register: reboot_required
+
+#    - name: Reboot if required
+#      reboot:
+#        reboot_timeout: 600
+#      when: reboot_required.stat.exists
+
+#    - name: Wait for SSH to come back
+#      wait_for_connection:
+#        connect_timeout: 10
+#        sleep: 5
+#        delay: 10
+#        timeout: 300
+#      when: reboot_required.stat.exists
+
+#    - name: Check Ceph health
+#      shell: "{{ ceph_health_command }}"
+#      register: ceph_health
+#      changed_when: false
+#      until: ceph_health.stdout is search(ceph_health_ok)
+#      retries: 12
+#      delay: 10
+
+#    - name: Fail if Ceph is not healthy
+#      fail:
+#        msg: "Ceph cluster is not healthy after reboot!"
+#      when: ceph_health.stdout is not search(ceph_health_ok)
