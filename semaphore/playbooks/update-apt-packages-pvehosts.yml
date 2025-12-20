@@ -37,7 +37,7 @@
     - name: Debug apt config dump
       ansible.builtin.debug:
         var: apt_config_result.stdout_lines
----
+
     - name: Update Proxmox nodes
       hosts: proxmox
       become: true
