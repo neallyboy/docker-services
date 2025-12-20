@@ -11,7 +11,6 @@ pbs ansible_host=192.168.10.160
 ansible_python_interpreter=/usr/bin/python3
 
 [lxc]
-docker ansible_host=192.168.10.71
 homarr ansible_host=192.168.10.202
 homeassistant ansible_host=192.168.10.128
 homebridge ansible_host=192.168.10.149
@@ -20,6 +19,7 @@ meshcentral ansible_host=192.168.10.52
 n8n ansible_host=192.168.10.161
 nginx ansible_host=192.168.10.93
 pihole ansible_host=192.168.10.55
+portainer ansible_host=192.168.10.71
 prometheus ansible_host=192.168.10.64
 pve-datacenter-manager ansible_host=192.168.10.106
 pve-scripts-local ansible_host=192.168.10.126
