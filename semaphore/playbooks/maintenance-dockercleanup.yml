@@ -20,7 +20,3 @@
     - name: Show output of prune command
       debug:
         var: prune_result.stdout
-
-    - name: Show Docker reported reclaimed space
-      debug:
-        msg: "{{ prune_result.stdout | regex_search('Total reclaimed space: (.*)', '\\1') | default('No value found') }}"
