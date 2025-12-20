@@ -104,19 +104,25 @@
       apt:
         update_cache: yes
 
+
     - name: Check for upgradable packages
-      shell: apt list --upgradable || true
+      shell: LC_ALL=C apt list --upgradable
       register: upgrade_check
       changed_when: false
       failed_when: false
 
-    - name: Debug raw upgrade_check output
+    - name: Debug raw upgrade_check stdout
       debug:
-        var: upgrade_check
+        var: upgrade_check.stdout_lines
+
+    - name: Debug raw upgrade_check stderr
+      debug:
+        var: upgrade_check.stderr_lines
 
     - name: Set upgrade_needed fact
       set_fact:
-        upgrade_needed: "{{ upgrade_check.stdout_lines | length > 0 }}"
+        # Only set upgrade_needed if there are real packages listed (skip header lines)
+        upgrade_needed: "{{ upgrade_check.stdout_lines | select('match', '^[^ ]+\/[^ ]+ ') | list | length > 0 }}"
 
     - name: Show upgradable packages
       debug:
