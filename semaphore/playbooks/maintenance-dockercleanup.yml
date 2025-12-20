@@ -2,10 +2,6 @@
   vars:
     ansible_python_interpreter: auto_silent
   tasks:
-    - name: Check disk usage before prune
-      shell: df -B1 /
-      register: disk_before
-
     - name: Prune unused Docker images
       shell: docker image prune -a -f
 
@@ -16,15 +12,3 @@
     - name: Show Docker reported reclaimed space
       debug:
         msg: "{{ prune_result.stdout | regex_search('Total reclaimed space: (.*)', '\\1') | default('No value found') }}"
-
-    - name: Check disk usage after prune
-      shell: df -B1 /
-      register: disk_after
-
-    - name: Calculate and display space saved
-      set_fact:
-        space_saved: "{{ (disk_after.stdout_lines[1].split()[3] | int) - (disk_before.stdout_lines[1].split()[3] | int) }}"
-
-    - name: Show space saved in bytes
-      debug:
-        msg: "Space saved after Docker cleanup: {{ space_saved | int | abs }} bytes"
