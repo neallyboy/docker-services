@@ -22,4 +22,4 @@
 
     - name: Show space saved in bytes
       debug:
-        msg: "Space saved after Docker cleanup: {{ space_saved | abs }} bytes"
+        msg: "Space saved after Docker cleanup: {{ space_saved | int | abs }} bytes"
