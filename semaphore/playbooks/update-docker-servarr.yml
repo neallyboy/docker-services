@@ -5,7 +5,7 @@
     - name: Pull latest Servarr images
       shell: docker compose -f servarr/docker-compose.yml pull
       args:
-        chdir: "{{ lookup('env','HOME') }}"
+        chdir: "/root/docker_services"
       register: pull_result
 
     - name: Show output of docker compose pull
@@ -15,7 +15,7 @@
     - name: Start Servarr containers if new images were pulled
       shell: docker compose -f servarr/docker-compose.yml up -d
       args:
-        chdir: "{{ lookup('env','HOME') }}"
+        chdir: "/root/docker_services"
       when: pull_result.stdout is search('Downloaded newer image')
       register: up_result
 
