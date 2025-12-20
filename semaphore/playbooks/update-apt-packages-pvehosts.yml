@@ -42,126 +42,44 @@
       changed_when: false
       failed_when: false
 
-    - name: Debug apt-get upgrade -s output
-      debug:
-        var: apt_upgrade_sim_result.stdout_lines
-    - name: Check upgradable packages (all versions)
-      shell: apt list --upgradable --all-versions || true
-      register: upgrade_all_versions
-      changed_when: false
-      failed_when: false
 
-    - name: Debug upgradable packages (all versions)
-      debug:
-        var: upgrade_all_versions.stdout_lines
+    - name: Update Proxmox nodes
+      hosts: proxmox
+      become: true
+      gather_facts: false
+      serial: 1
 
-    - name: Check upgradable packages (manual)
-      shell: apt list --upgradable --manual || true
-      register: upgrade_manual
-      changed_when: false
-      failed_when: false
+      tasks:
+        - name: Update apt cache
+          ansible.builtin.apt:
+            update_cache: true
+            cache_valid_time: 3600
 
-    - name: Debug upgradable packages (manual)
-      debug:
-        var: upgrade_manual.stdout_lines
+        - name: Perform full-upgrade (dist-upgrade equivalent)
+          ansible.builtin.apt:
+            upgrade: full
+            autoclean: true
+            autoremove: true
+          register: apt_status
 
-    - name: Check held packages
-      shell: dpkg --get-selections | grep hold || true
-      register: held_packages
-      changed_when: false
-      failed_when: false
+        # - name: Reboot the host if required
+        #   ansible.builtin.shell: "sleep 5 && /sbin/shutdown -r now"
+        #   args:
+        #     chdir: /
+        #   async: 1
+        #   poll: 0
+        #   when: apt_status.changed and (apt_status.reboot_required | default(false))
 
-    - name: Debug held packages
-      debug:
-        var: held_packages.stdout_lines
-    - name: Print current user
-      shell: whoami
-      register: whoami_result
-      changed_when: false
+        # - name: Wait for the host to come back online
+        #   ansible.builtin.wait_for:
+        #     port: 22
+        #     host: "{{ inventory_hostname }}"
+        #     state: started
+        #     delay: 30
+        #     timeout: 300
+        #   when: apt_status.changed and (apt_status.reboot_required | default(false))
 
-    - name: Debug current user
-      debug:
-        var: whoami_result.stdout
+        # - name: Re-gather facts after reboot to confirm connectivity and state
+        #   ansible.builtin.setup:
+        #   when: apt_status.changed and (apt_status.reboot_required | default(false))
 
-    - name: Print environment variables
-      shell: env
-      register: env_result
-      changed_when: false
-
-    - name: Debug environment variables
-      debug:
-        var: env_result.stdout_lines
-
-    - name: Run apt-get update (shell)
-      shell: apt-get update
-      register: apt_update_result
-      changed_when: false
-
-    - name: Debug apt-get update output
-      debug:
-        var: apt_update_result.stdout_lines
-    - name: Update apt cache
-      apt:
-        update_cache: yes
-
-
-    - name: Check for upgradable packages
-      shell: LC_ALL=C apt list --upgradable
-      register: upgrade_check
-      changed_when: false
-      failed_when: false
-
-    - name: Debug raw upgrade_check stdout
-      debug:
-        var: upgrade_check.stdout_lines
-
-    - name: Debug raw upgrade_check stderr
-      debug:
-        var: upgrade_check.stderr_lines
-
-    - name: Set upgrade_needed fact
-      set_fact:
-        # Only set upgrade_needed if there are real packages listed (skip header lines)
-        upgrade_needed: "{{ upgrade_check.stdout_lines | select('match', '^[^ ]+\/[^ ]+ ') | list | length > 0 }}"
-
-    - name: Show upgradable packages
-      debug:
-        var: upgrade_check.stdout_lines
-      when: upgrade_needed
-
-    - name: Upgrade packages if needed
-      apt:
-        upgrade: 'dist'
-        update_cache: no
-      when: upgrade_needed
-
-#    - name: Check if reboot is required
-#      stat:
-#        path: /var/run/reboot-required
-#      register: reboot_required
-
-#    - name: Reboot if required
-#      reboot:
-#        reboot_timeout: 600
-#      when: reboot_required.stat.exists
-
-#    - name: Wait for SSH to come back
-#      wait_for_connection:
-#        connect_timeout: 10
-#        sleep: 5
-#        delay: 10
-#        timeout: 300
-#      when: reboot_required.stat.exists
-
-#    - name: Check Ceph health
-#      shell: "{{ ceph_health_command }}"
-#      register: ceph_health
-#      changed_when: false
-#      until: ceph_health.stdout is search(ceph_health_ok)
-#      retries: 12
-#      delay: 10
-
-#    - name: Fail if Ceph is not healthy
-#      fail:
-#        msg: "Ceph cluster is not healthy after reboot!"
-#      when: ceph_health.stdout is not search(ceph_health_ok)
