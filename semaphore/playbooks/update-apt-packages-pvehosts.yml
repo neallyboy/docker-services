@@ -58,13 +58,7 @@
       ansible.builtin.debug:
         var: dist_upgrade_sim_result.stdout_lines
 
-    - name: Show upgradable packages (stdout)
-      ansible.builtin.debug:
-        var: upgrades_raw_result.stdout_lines
 
-    - name: Show upgradable packages (stderr)
-      ansible.builtin.debug:
-        var: upgrades_raw_result.stderr_lines
 
     - name: Check if reboot is required
       ansible.builtin.stat:
@@ -78,7 +72,7 @@
     - name: Pause for confirmation before upgrade
       pause:
         prompt: Do you want to upgrade the above packages? Press enter to continue, or Ctrl+c and then 'a' to abort.
-      when: upgrades_raw_result.stdout_lines|length > 1
+      when: dist_upgrade_sim_result.stdout is not search('0 upgraded, 0 newly installed, 0 to remove and 0 not upgraded.')
 
     - name: Install apt upgrades
       ansible.builtin.apt:
