@@ -7,6 +7,25 @@
     ceph_health_command: 'ceph health'
     ceph_health_ok: 'HEALTH_OK'
   tasks:
+    - name: Run pveupgrade (if available)
+      shell: pveupgrade || echo 'pveupgrade not found'
+      register: pveupgrade_result
+      changed_when: false
+      failed_when: false
+
+    - name: Debug pveupgrade output
+      debug:
+        var: pveupgrade_result.stdout_lines
+
+    - name: Simulate apt-get upgrade
+      shell: apt-get upgrade -s || true
+      register: apt_upgrade_sim_result
+      changed_when: false
+      failed_when: false
+
+    - name: Debug apt-get upgrade -s output
+      debug:
+        var: apt_upgrade_sim_result.stdout_lines
     - name: Check upgradable packages (all versions)
       shell: apt list --upgradable --all-versions || true
       register: upgrade_all_versions
