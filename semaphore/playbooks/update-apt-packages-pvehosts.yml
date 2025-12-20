@@ -38,7 +38,7 @@
         update_cache: yes
 
     - name: Check for upgradable packages
-      shell: apt-get -s dist-upgrade || true
+      shell: apt list --upgradable || true
       register: upgrade_check
       changed_when: false
       failed_when: false
