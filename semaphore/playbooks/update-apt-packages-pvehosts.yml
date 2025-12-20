@@ -43,12 +43,12 @@
       failed_when: false
 
 
+
     - name: Update Proxmox nodes
       hosts: proxmox
       become: true
       gather_facts: false
       serial: 1
-
       tasks:
         - name: Update apt cache
           ansible.builtin.apt:
