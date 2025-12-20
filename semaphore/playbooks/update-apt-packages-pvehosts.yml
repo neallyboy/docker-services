@@ -10,31 +10,24 @@
             update_cache: true
             cache_valid_time: 3600
 
-        - name: Perform full-upgrade (dist-upgrade equivalent)
+        - name: Get upgradable packages
+          ansible.builtin.shell: |
+            apt list --upgradable | sed '/Listing.../d'
+          register: upgrades_result
+
+        - name: Show upgradable packages
+          ansible.builtin.debug:
+            msg: "{{ upgrades_result.stdout_lines }}"
+
+        - name: Pause for confirmation before upgrade
+          pause:
+            prompt: Do you want to upgrade the above packages? Press enter to continue, or Ctrl+c and then 'a' to abort.
+          when: upgrades_result.stdout_lines|length > 0
+
+        - name: Install apt upgrades
           ansible.builtin.apt:
-            upgrade: full
-            autoclean: true
+            upgrade: dist
             autoremove: true
-          register: apt_status
-
-        # - name: Reboot the host if required
-        #   ansible.builtin.shell: "sleep 5 && /sbin/shutdown -r now"
-        #   args:
-        #     chdir: /
-        #   async: 1
-        #   poll: 0
-        #   when: apt_status.changed and (apt_status.reboot_required | default(false))
-
-        # - name: Wait for the host to come back online
-        #   ansible.builtin.wait_for:
-        #     port: 22
-        #     host: "{{ inventory_hostname }}"
-        #     state: started
-        #     delay: 30
-        #     timeout: 300
-        #   when: apt_status.changed and (apt_status.reboot_required | default(false))
-
-        # - name: Re-gather facts after reboot to confirm connectivity and state
-        #   ansible.builtin.setup:
-        #   when: apt_status.changed and (apt_status.reboot_required | default(false))
+            autoclean: true
+          register: apt_upgrade_result
 
