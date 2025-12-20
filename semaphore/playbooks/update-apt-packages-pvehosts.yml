@@ -1,10 +1,17 @@
-
+---
 - name: Update Proxmox nodes
   hosts: proxmox
   become: true
   gather_facts: false
   serial: 1
   tasks:
+    - name: Show upgradable packages (apt list --upgradable)
+      ansible.builtin.shell: apt list --upgradable | sed '/Listing.../d'
+      register: apt_list_upgradable_result
+
+    - name: Debug upgradable packages (apt list --upgradable)
+      ansible.builtin.debug:
+        var: apt_list_upgradable_result.stdout_lines
     - name: Show current user (whoami)
       ansible.builtin.shell: whoami
       register: whoami_result
