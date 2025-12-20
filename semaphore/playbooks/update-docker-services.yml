@@ -2,8 +2,8 @@
   vars:
     ansible_python_interpreter: auto_silent
   tasks:
-    - name: Pull latest Servarr images
-      shell: docker compose -f servarr/docker-compose.yml pull
+    - name: Pull latest {{ service_dir }} images
+      shell: docker compose -f {{ service_dir }}/docker-compose.yml pull
       args:
         chdir: "/root/docker_services"
       register: pull_result
@@ -12,8 +12,8 @@
       debug:
         var: pull_result.stdout
 
-    - name: Start Servarr containers if new images were pulled
-      shell: docker compose -f servarr/docker-compose.yml up -d
+    - name: Start {{ service_dir }} containers if new images were pulled
+      shell: docker compose -f {{ service_dir }}/docker-compose.yml up -d
       args:
         chdir: "/root/docker_services"
       when: pull_result.stdout is search('Downloaded newer image')
