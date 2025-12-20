@@ -46,7 +46,6 @@
         timeout: 600
       when: reboot_required_file.stat.exists
 
-
     - name: Wait for Ceph cluster health to be OK or WARN
       ansible.builtin.shell: ceph health
       register: ceph_health_result

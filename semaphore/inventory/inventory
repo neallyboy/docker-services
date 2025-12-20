@@ -2,8 +2,8 @@
 # Define Proxmox VE hosts with their respective IP addresses.
 pve01 ansible_host=192.168.10.88
 pve02 ansible_host=192.168.10.33
-# pve03 ansible_host=192.168.10.99
-# pbs ansible_host=192.168.10.160
+pve03 ansible_host=192.168.10.99
+pbs ansible_host=192.168.10.160
 
 # The following group variable sets the Python interpreter for all hosts in the [proxmox] group.
 # This avoids Python version warnings and makes it easy to change the interpreter in one place.
@@ -11,20 +11,26 @@ pve02 ansible_host=192.168.10.33
 ansible_python_interpreter=/usr/bin/python3
 
 [lxc]
-homeassistant.lan.digitalflex.ca
-homepage.lan.digitalflex.ca
-it-tools.lan.digitalflex.ca
-meshcentral.lan.digitalflex.ca
-nginx.lan.digitalflex.ca
-pihole.lan.digitalflex.ca
-prometheus.lan.digitalflex.ca
-stirling-pdf.lan.digitalflex.ca
-portainer.lan.digitalflex.ca
+docker ansible_host=192.168.10.71
+homarr ansible_host=192.168.10.202
+homeassistant ansible_host=192.168.10.128
+homebridge ansible_host=192.168.10.149
+homepage ansible_host=192.168.10.9
+meshcentral ansible_host=192.168.10.52
+n8n ansible_host=192.168.10.161
+nginx ansible_host=192.168.10.93
+pihole ansible_host=192.168.10.55
+prometheus ansible_host=192.168.10.64
+pve-datacenter-manager ansible_host=192.168.10.106
+pve-scripts-local ansible_host=192.168.10.126
+stirling-pdf ansible_host=192.168.10.8
+wordpress ansible_host=192.168.10.159
 
 [docker]
 auth.lan.digitalflex.ca
 bazarr.lan.digitalflex.ca
 grafana.lan.digitalflex.ca
+it-tools.lan.digitalflex.ca
 influxdb2.lan.digitalflex.ca
 jellyfin.lan.digitalflex.ca
 prowlarr.lan.digitalflex.ca
