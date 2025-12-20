@@ -7,6 +7,35 @@
     ceph_health_command: 'ceph health'
     ceph_health_ok: 'HEALTH_OK'
   tasks:
+    - name: Check upgradable packages (all versions)
+      shell: apt list --upgradable --all-versions || true
+      register: upgrade_all_versions
+      changed_when: false
+      failed_when: false
+
+    - name: Debug upgradable packages (all versions)
+      debug:
+        var: upgrade_all_versions.stdout_lines
+
+    - name: Check upgradable packages (manual)
+      shell: apt list --upgradable --manual || true
+      register: upgrade_manual
+      changed_when: false
+      failed_when: false
+
+    - name: Debug upgradable packages (manual)
+      debug:
+        var: upgrade_manual.stdout_lines
+
+    - name: Check held packages
+      shell: dpkg --get-selections | grep hold || true
+      register: held_packages
+      changed_when: false
+      failed_when: false
+
+    - name: Debug held packages
+      debug:
+        var: held_packages.stdout_lines
     - name: Print current user
       shell: whoami
       register: whoami_result
