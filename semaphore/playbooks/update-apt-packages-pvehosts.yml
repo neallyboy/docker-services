@@ -50,8 +50,8 @@
         update_cache: true
         cache_valid_time: 3600
 
-    - name: Get upgradable packages (raw)
-      ansible.builtin.shell: apt list --upgradable
+    - name: Get upgradable packages (with pseudo-TTY)
+      ansible.builtin.shell: script -q -c "apt list --upgradable" /dev/null
       register: upgrades_raw_result
 
     - name: Show upgradable packages (stdout)
