@@ -1,8 +1,8 @@
 [proxmox]
-pve01.lan.digitalflex.ca
-pve02.lan.digitalflex.ca
-pve03.lan.digitalflex.ca
-pbs.lan.digitalflex.ca
+pve01 ansible_host=192.168.10.88
+pve02 ansible_host=192.168.10.33
+pve03 ansible_host=192.168.10.99
+pbs ansible_host=192.168.10.160
 
 [lxc]
 homeassistant.lan.digitalflex.ca
