@@ -7,6 +7,32 @@
     ceph_health_command: 'ceph health'
     ceph_health_ok: 'HEALTH_OK'
   tasks:
+    - name: Print current user
+      shell: whoami
+      register: whoami_result
+      changed_when: false
+
+    - name: Debug current user
+      debug:
+        var: whoami_result.stdout
+
+    - name: Print environment variables
+      shell: env
+      register: env_result
+      changed_when: false
+
+    - name: Debug environment variables
+      debug:
+        var: env_result.stdout_lines
+
+    - name: Run apt-get update (shell)
+      shell: apt-get update
+      register: apt_update_result
+      changed_when: false
+
+    - name: Debug apt-get update output
+      debug:
+        var: apt_update_result.stdout_lines
     - name: Update apt cache
       apt:
         update_cache: yes
