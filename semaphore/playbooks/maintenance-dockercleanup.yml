@@ -1,12 +1,28 @@
-- hosts: "{{ target_group }}"
+- hosts: docker-lxc
   vars:
     ansible_python_interpreter: auto_silent
   tasks:
+    - name: Check disk usage before prune
+      shell: df -B1 /
+      register: disk_before
+
     - name: Prune unused Docker images
       shell: docker image prune -a -f
 
-    - name: Prune all unused Docker data including volumes (Portainer LXC)
+    - name: Prune all unused Docker data including volumes (docker-lxc)
       shell: docker system prune --volumes --all -f
       args:
         warn: false
-      when: inventory_hostname == 'portainer'
+      when: inventory_hostname == 'docker-lxc'
+
+    - name: Check disk usage after prune
+      shell: df -B1 /
+      register: disk_after
+
+    - name: Calculate and display space saved
+      set_fact:
+        space_saved: "{{ (disk_after.stdout_lines[1].split()[3] | int) - (disk_before.stdout_lines[1].split()[3] | int) }}"
+
+    - name: Show space saved in bytes
+      debug:
+        msg: "Space saved after Docker cleanup: {{ space_saved | abs }} bytes"
