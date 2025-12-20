@@ -17,6 +17,10 @@
       changed_when: false
       failed_when: false
 
+    - name: Debug raw upgrade_check output
+      debug:
+        var: upgrade_check
+
     - name: Set upgrade_needed fact
       set_fact:
         upgrade_needed: "{{ upgrade_check.stdout_lines | length > 0 }}"
