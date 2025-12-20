@@ -38,7 +38,7 @@
         update_cache: yes
 
     - name: Check for upgradable packages
-      shell: apt list --upgradable 2>/dev/null | tail -n +2
+      shell: apt-get -s dist-upgrade | grep '^Inst' || true
       register: upgrade_check
       changed_when: false
       failed_when: false
