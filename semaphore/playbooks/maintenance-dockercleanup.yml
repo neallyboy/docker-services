@@ -4,3 +4,9 @@
   tasks:
     - name: Prune unused Docker images
       shell: docker image prune -a -f
+
+    - name: Prune all unused Docker data including volumes (Portainer LXC)
+      shell: docker system prune --volumes --all -f
+      args:
+        warn: false
+      when: inventory_hostname == 'portainer'
