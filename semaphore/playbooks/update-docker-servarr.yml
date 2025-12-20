@@ -22,4 +22,6 @@
     - name: Show output of docker compose up
       debug:
         var: up_result.stdout
-      when: up_result is defined
+      when:
+        - up_result is defined
+        - up_result is not skipped
