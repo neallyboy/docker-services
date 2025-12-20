@@ -7,6 +7,10 @@
     ceph_health_command: 'ceph health'
     ceph_health_ok: 'HEALTH_OK'
   tasks:
+    - name: Show upgradable packages
+      debug:
+        var: upgrade_check.stdout_lines
+      when: upgrade_needed
     - name: Update apt cache
       apt:
         update_cache: yes
@@ -19,7 +23,7 @@
 
     - name: Set upgrade_needed fact
       set_fact:
-        upgrade_needed: "{{ upgrade_check.stdout != '' }}"
+        upgrade_needed: "{{ upgrade_check.stdout_lines | length > 0 }}"
 
     - name: Upgrade packages if needed
       apt:
