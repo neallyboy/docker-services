@@ -11,9 +11,6 @@
 
     - name: Prune all unused Docker data including volumes (docker-lxc)
       shell: docker system prune --volumes --all -f
-      args:
-        warn: false
-      when: inventory_hostname == 'docker-lxc'
 
     - name: Check disk usage after prune
       shell: df -B1 /
