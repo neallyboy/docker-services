@@ -12,15 +12,13 @@
         update_cache: yes
 
     - name: Check for upgradable packages
-      apt:
-        upgrade: 'dist'
-        update_cache: no
-        simulate: yes
+      shell: apt list --upgradable 2>/dev/null | grep -v "Listing..."
       register: upgrade_check
+      changed_when: false
 
     - name: Set upgrade_needed fact
       set_fact:
-        upgrade_needed: "{{ upgrade_check.stdout_lines | select('search', 'Inst') | list | length > 0 }}"
+        upgrade_needed: "{{ upgrade_check.stdout_lines | length > 0 }}"
 
     - name: Upgrade packages if needed
       apt:
