@@ -1,0 +1,25 @@
+- hosts: docker-lxc
+  vars:
+    ansible_python_interpreter: auto_silent
+  tasks:
+    - name: Pull latest Servarr images
+      shell: docker compose -f servarr/docker-compose.yml pull
+      args:
+        chdir: "~"
+      register: pull_result
+
+    - name: Show output of docker compose pull
+      debug:
+        var: pull_result.stdout
+
+    - name: Start Servarr containers if new images were pulled
+      shell: docker compose -f servarr/docker-compose.yml up -d
+      args:
+        chdir: "~"
+      when: pull_result.stdout is search('Downloaded newer image')
+      register: up_result
+
+    - name: Show output of docker compose up
+      debug:
+        var: up_result.stdout
+      when: up_result is defined
