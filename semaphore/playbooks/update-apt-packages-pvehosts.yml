@@ -57,6 +57,34 @@
         update_cache: true
         cache_valid_time: 3600
 
+
+    - name: Run apt update (for debug)
+      ansible.builtin.shell: apt update
+      register: apt_update_result
+      changed_when: false
+
+    - name: Debug apt update output
+      ansible.builtin.debug:
+        var: apt_update_result.stdout_lines
+
+    - name: Show upgradable packages (apt list --upgradable, no sed, capture stderr)
+      ansible.builtin.shell: apt list --upgradable 2>&1
+      register: apt_list_upgradable_all_result
+      changed_when: false
+
+    - name: Debug upgradable packages (apt list --upgradable, no sed)
+      ansible.builtin.debug:
+        var: apt_list_upgradable_all_result.stdout_lines
+
+    - name: Show upgradable packages (apt list --upgradable | sed '1d')
+      ansible.builtin.shell: apt list --upgradable 2>/dev/null | sed '1d'
+      register: apt_list_upgradable_result_sed
+      changed_when: false
+
+    - name: Debug upgradable packages (apt list --upgradable | sed '1d')
+      ansible.builtin.debug:
+        var: apt_list_upgradable_result_sed.stdout_lines
+
     - name: Simulate dist-upgrade to show upgradable packages
       ansible.builtin.shell: apt-get -s dist-upgrade
       register: dist_upgrade_sim_result
