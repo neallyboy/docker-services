@@ -2,8 +2,15 @@
   vars:
     ansible_python_interpreter: auto_silent
   tasks:
+
     - name: Prune unused Docker images
       shell: docker image prune -a -f
+      register: image_prune_result
+      changed_when: "'Total reclaimed space: 0B' not in image_prune_result.stdout"
+
+    - name: Show output of image prune command
+      debug:
+        var: image_prune_result.stdout
 
     - name: Prune all unused Docker data including volumes (docker-lxc)
       shell: docker system prune --volumes --all -f
