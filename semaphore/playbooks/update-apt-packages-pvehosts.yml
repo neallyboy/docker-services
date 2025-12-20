@@ -10,23 +10,37 @@
             update_cache: true
             cache_valid_time: 3600
 
-        - name: Get upgradable packages
-          ansible.builtin.shell: |
-            apt list --upgradable | sed '/Listing.../d'
-          register: upgrades_result
 
-        - name: Show upgradable packages
+        - name: Get upgradable packages (raw)
+          ansible.builtin.shell: apt list --upgradable
+          register: upgrades_raw_result
+
+        - name: Show upgradable packages (stdout)
           ansible.builtin.debug:
-            msg: "{{ upgrades_result.stdout_lines }}"
+            var: upgrades_raw_result.stdout_lines
+
+        - name: Show upgradable packages (stderr)
+          ansible.builtin.debug:
+            var: upgrades_raw_result.stderr_lines
+
+
+        - name: Check if reboot is required
+          ansible.builtin.stat:
+            path: /var/run/reboot-required
+          register: reboot_required_file
+
+        - name: Show if reboot is required
+          ansible.builtin.debug:
+            msg: "Reboot required: {{ reboot_required_file.stat.exists }}"
 
         - name: Pause for confirmation before upgrade
           pause:
             prompt: Do you want to upgrade the above packages? Press enter to continue, or Ctrl+c and then 'a' to abort.
-          when: upgrades_result.stdout_lines|length > 0
+          when: upgrades_raw_result.stdout_lines|length > 1
 
         - name: Install apt upgrades
           ansible.builtin.apt:
-            upgrade: dist
+            upgrade: full
             autoremove: true
             autoclean: true
           register: apt_upgrade_result
