@@ -1,7 +1,7 @@
 [proxmox]
 # Define Proxmox VE hosts with their respective IP addresses.
 pve01 ansible_host=192.168.10.88
-# pve02 ansible_host=192.168.10.33
+pve02 ansible_host=192.168.10.33
 # pve03 ansible_host=192.168.10.99
 # pbs ansible_host=192.168.10.160
 
