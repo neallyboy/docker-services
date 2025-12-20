@@ -7,6 +7,25 @@
     ceph_health_command: 'ceph health'
     ceph_health_ok: 'HEALTH_OK'
   tasks:
+    - name: Simulate apt-get dist-upgrade
+      shell: apt-get dist-upgrade -s || true
+      register: apt_dist_upgrade_sim_result
+      changed_when: false
+      failed_when: false
+
+    - name: Debug apt-get dist-upgrade -s output
+      debug:
+        var: apt_dist_upgrade_sim_result.stdout_lines
+
+    - name: Simulate apt-get --just-print upgrade
+      shell: apt-get --just-print upgrade || true
+      register: apt_just_print_upgrade_result
+      changed_when: false
+      failed_when: false
+
+    - name: Debug apt-get --just-print upgrade output
+      debug:
+        var: apt_just_print_upgrade_result.stdout_lines
     - name: Run pveupgrade (if available)
       shell: pveupgrade || echo 'pveupgrade not found'
       register: pveupgrade_result
