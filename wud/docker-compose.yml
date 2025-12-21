@@ -14,18 +14,33 @@ services:
       - WUD_REGISTRY_LSCR_PRIVATE_TOKEN=${WUD_REGISTRY_LSCR_PRIVATE_TOKEN}
       - WUD_REGISTRY_HUB_PUBLIC_LOGIN=${WUD_REGISTRY_HUB_PUBLIC_LOGIN}
       - WUD_REGISTRY_HUB_PUBLIC_PASSWORD=${WUD_REGISTRY_HUB_PUBLIC_PASSWORD}
-      # - WUD_TRIGGER_DOCKERCOMPOSE_GRAFANA_AUTO=false
-      # - WUD_TRIGGER_DOCKERCOMPOSE_GRAFANA_BACKUP=true
-      # - WUD_TRIGGER_DOCKERCOMPOSE_GRAFANA_PRUNE=true
-      # - WUD_TRIGGER_DOCKERCOMPOSE_GRAFANA_FILE=/root/docker_services/grafana/docker-compose.yml
-      # - WUD_TRIGGER_DOCKERCOMPOSE_SEMAPHORE_AUTO=false
-      # - WUD_TRIGGER_DOCKERCOMPOSE_SEMAPHORE_BACKUP=true
-      # - WUD_TRIGGER_DOCKERCOMPOSE_SEMAPHORE_PRUNE=true
-      # - WUD_TRIGGER_DOCKERCOMPOSE_SEMAPHORE_FILE=/root/docker_services/semaphore/docker-compose.yml
+      - WUD_TRIGGER_DOCKERCOMPOSE_GRAFANA_AUTO=false
+      - WUD_TRIGGER_DOCKERCOMPOSE_GRAFANA_BACKUP=true
+      - WUD_TRIGGER_DOCKERCOMPOSE_GRAFANA_PRUNE=true
+      - WUD_TRIGGER_DOCKERCOMPOSE_GRAFANA_FILE=/root/docker_services/grafana/docker-compose.yml
+      - WUD_TRIGGER_DOCKERCOMPOSE_INFLUXDB2_AUTO=false
+      - WUD_TRIGGER_DOCKERCOMPOSE_INFLUXDB2_BACKUP=true
+      - WUD_TRIGGER_DOCKERCOMPOSE_INFLUXDB2_PRUNE=true
+      - WUD_TRIGGER_DOCKERCOMPOSE_INFLUXDB2_FILE=/root/docker_services/influxdb/docker-compose.yml
+      - WUD_TRIGGER_DOCKERCOMPOSE_ITTOOLS_AUTO=false
+      - WUD_TRIGGER_DOCKERCOMPOSE_ITTOOLS_BACKUP=true
+      - WUD_TRIGGER_DOCKERCOMPOSE_ITTOOLS_PRUNE=true
+      - WUD_TRIGGER_DOCKERCOMPOSE_ITTOOLS_FILE=/root/docker_services/it-tools/docker-compose.yml
+      - WUD_TRIGGER_DOCKERCOMPOSE_SEMAPHORE_AUTO=false
+      - WUD_TRIGGER_DOCKERCOMPOSE_SEMAPHORE_BACKUP=true
+      - WUD_TRIGGER_DOCKERCOMPOSE_SEMAPHORE_PRUNE=true
+      - WUD_TRIGGER_DOCKERCOMPOSE_SEMAPHORE_FILE=/root/docker_services/semaphore/docker-compose.yml
+      - WUD_TRIGGER_DOCKERCOMPOSE_SPEEDTEST-TRACKER_AUTO=false
+      - WUD_TRIGGER_DOCKERCOMPOSE_SPEEDTEST-TRACKER_BACKUP=true
+      - WUD_TRIGGER_DOCKERCOMPOSE_SPEEDTEST-TRACKER_PRUNE=true
+      - WUD_TRIGGER_DOCKERCOMPOSE_SPEEDTEST-TRACKER_FILE=/root/docker_services/speedtest-tracker/docker-compose.yml
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
-      # - /root/docker_services/semaphore:/root/docker_services/semaphore
-      # - /root/docker_services/grafana:/root/docker_services/grafana
+      - /root/docker_services/semaphore:/root/docker_services/semaphore
+      - /root/docker_services/grafana:/root/docker_services/grafana
+      - /root/docker_services/influxdb:/root/docker_services/influxdb
+      - /root/docker_services/it-tools:/root/docker_services/it-tools
+      - /root/docker_services/speedtest-tracker:/root/docker_services/speedtest-tracker
     ports:
       - 3002:3000
     restart: unless-stopped
