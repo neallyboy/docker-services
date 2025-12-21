@@ -2,6 +2,8 @@ services:
   influxdb2:
     image: influxdb:2
     container_name: influxdb2
+    labels:
+      - wud.trigger=dockercompose:influxdb2
     restart: always
     ports:
       - 8086:8086

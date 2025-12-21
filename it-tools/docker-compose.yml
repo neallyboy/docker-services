@@ -3,6 +3,8 @@ services:
     it-tools:
         image: 'corentinth/it-tools:latest'
         container_name: it-tools
+        labels:
+            - wud.trigger=dockercompose:it-tools
         ports:
             - 32768:80
         restart: always

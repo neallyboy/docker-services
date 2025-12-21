@@ -28,6 +28,7 @@ services:
         labels:
             - 'wud.display.name=speedtest-tracker'
             - 'wud.link.template=https://github.com/linuxserver/docker-speedtest-tracker/releases/tag/$${major}.$${minor}.$${patch}'
+            - wud.trigger=dockercompose:speedtest-tracker
     db:
         image: mariadb:11
         container_name: speedtest-tracker-db
