@@ -1,6 +1,8 @@
 services:
   grafana:
     image: grafana/grafana-enterprise
+    labels:
+      - wud.trigger=dockercompose:grafana
     container_name: grafana
     restart: unless-stopped
     ports:

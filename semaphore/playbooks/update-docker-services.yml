@@ -12,11 +12,10 @@
       debug:
         var: pull_result.stdout
 
-    - name: Start {{ service_dir }} containers if new images were pulled
+    - name: Start {{ service_dir }} containers
       shell: docker compose -f {{ service_dir }}/docker-compose.yml up -d
       args:
         chdir: "/root/docker_services"
-      when: pull_result.stdout is search('Downloaded newer image')
       register: up_result
 
     - name: Show output of docker compose up

@@ -27,6 +27,8 @@ services:
     ports:
       - 3001:3000
     image: semaphoreui/semaphore:latest
+    labels:
+      - wud.trigger=dockercompose:semaphore
     environment:
       SEMAPHORE_DB_USER: semaphore
       SEMAPHORE_DB_PASS: ${MYSQL_PASSWORD}
