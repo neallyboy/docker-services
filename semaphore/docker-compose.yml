@@ -53,6 +53,9 @@ services:
       TZ: UTC
       SEMAPHORE_WEB_ROOT: https://semaphore.lan.digitalflex.ca
       SEMAPHORE_SCHEDULE_TIMEZONE: "America/Toronto"
+      SEMAPHORE_GOTIFY_ALERT: true
+      SEMAPHORE_GOTIFY_URL: ${SEMAPHORE_GOTIFY_URL}
+      SEMAPHORE_GOTIFY_TOKEN: ${SEMAPHORE_GOTIFY_TOKEN}
     depends_on:
       - mysql # for postgres, change to: postgres
 volumes:
