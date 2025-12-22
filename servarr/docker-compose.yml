@@ -24,6 +24,7 @@ services:
       - OPENVPN_PASSWORD=${OPENVPN_PASSWORD}
       - SERVER_NAMES=${SERVER_NAMES}
       - SERVER_HOSTNAMES=${SERVER_HOSTNAMES}
+      - FIREWALL_OUTBOUND_SUBNETS=192.168.10.71/32 # Allow NGINX Proxy Manager IP through the VPN, Gotify
 
     ports:
       - 7878:7878                 # Radarr
