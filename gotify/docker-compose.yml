@@ -10,3 +10,4 @@ services:
     # to run gotify as a dedicated user:
     # sudo chown -R 1234:1234 ./gotify_data
     # user: "1234:1234"
+    restart: always

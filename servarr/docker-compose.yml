@@ -276,7 +276,7 @@ services:
   #     - /media/servarr/configarr/dockerrepos:/app/repos # Cache repositories
   #     - /media/servarr/configarr/custom/cfs:/app/cfs # Optional if custom formats locally provided
   #     - /media/servarr/configarr/custom/templates:/app/templates # Optional if custom templates
-    # restart: "no" # optional make sure this is set to no or removed. Default is no
+  #   restart: "no" # optional make sure this is set to no or removed. Default is no
 
 # -----------------------------------------------------------
 # Jellyfin Docker Compose Configuration
@@ -326,3 +326,4 @@ services:
       - /media/servarr/plex/config:/config
       - /media/servarr/plex/transcode:/transcode
       - /mnt/qnap/servarr:/data
+    restart: always

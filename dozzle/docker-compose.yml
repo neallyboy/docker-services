@@ -2,6 +2,16 @@
 services:
   dozzle:
     image: amir20/dozzle:latest
+    container_name: dozzle
+    # labels:
+    #   - homepage.group=Docker Containers
+    #   - homepage.name=Dozzle
+    #   - homepage.icon=https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/webp/dozzle.webp
+    #   - homepage.href=https://dozzle.lan.digitalflex.ca/
+    #   - homepage.description=docker log viewer
+    #   - homepage.ping=https://dozzle.lan.digitalflex.ca/
+    #   - homepage.siteMonitor=https://dozzle.lan.digitalflex.ca/
+    #   - homepage.groupWeight=-1
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
     ports:
@@ -15,3 +25,4 @@ services:
       #
       # Uncomment to enable authentication. See https://dozzle.dev/guide/authentication
       # - DOZZLE_AUTH_PROVIDER=simple
+    restart: always
