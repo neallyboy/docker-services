@@ -4,7 +4,7 @@ services:
       container_name: changedetection
       hostname: changedetection
       volumes:
-        - changedetection-data:/datastore
+        - /mnt/qnap/docker_services/changedetection/data:/datastore
 # Configurable proxy list support, see https://github.com/dgtlmoon/changedetection.io/wiki/Proxy-configuration#proxy-list-support
 #        - ./proxies.json:/datastore/proxies.json
 
@@ -137,5 +137,5 @@ services:
 #            - /dev/shm:/dev/shm
 #        restart: unless-stopped
 
-volumes:
-  changedetection-data:
+# volumes:
+#   changedetection-data:
