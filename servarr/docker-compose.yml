@@ -11,12 +11,7 @@ services:
       - NET_ADMIN
     devices:
       - /dev/net/tun:/dev/net/tun
-    environment:
-      # - VPN_SERVICE_PROVIDER=${VPN_SERVICE_PROVIDER}
-      # - VPN_TYPE=${VPN_TYPE}
-      # - WIREGUARD_PRIVATE_KEY=${WIREGUARD_PRIVATE_KEY}
-      # - SERVER_COUNTRIES=${SERVER_COUNTRIES}
-      
+    environment:  
       - LOG_LEVEL=${LOG_LEVEL}
       - VPN_PORT_FORWARDING=${VPN_PORT_FORWARDING}
       - VPN_SERVICE_PROVIDER=${VPN_SERVICE_PROVIDER}
@@ -24,7 +19,7 @@ services:
       - OPENVPN_PASSWORD=${OPENVPN_PASSWORD}
       - SERVER_NAMES=${SERVER_NAMES}
       - SERVER_HOSTNAMES=${SERVER_HOSTNAMES}
-      - FIREWALL_OUTBOUND_SUBNETS=192.168.10.71/32 # Allow NGINX Proxy Manager IP through the VPN, Gotify
+      - FIREWALL_OUTBOUND_SUBNETS=192.168.10.71/32    # Allow NGINX Proxy Manager IP through the VPN, Gotify
 
     ports:
       - 7878:7878                 # Radarr
@@ -37,7 +32,6 @@ services:
       - "${PORT:-8191}:8191"      # FlareSolverr
       - 6767:6767                 # Bazarr
       - 6969:6969                 # Whisparr
-    #  - 5055:5055                 # Jellyseerr
     restart: always
 
 # -----------------------------------------------------------
@@ -58,28 +52,6 @@ services:
       - gluetun
 
 # -----------------------------------------------------------
-# qBitTorrent Docker Compose Configuration
-# Description: Bittorrent client for downloading and managing torrents
-# -----------------------------------------------------------
-  # qbittorrent:
-  #   image: ghcr.io/hotio/qbittorrent
-  #   container_name: qbittorrent
-  #   network_mode: "service:gluetun" # Uses VPN network
-  #   environment:
-  #     - PUID=${PUID}
-  #     - PGID=${PGID}
-  #     - UMASK=${UMASK}
-  #     - TZ=${TZ}
-  #     - WEBUI_PORTS=${WEBUI_PORTS}
-  #     - TORRENTING_PORT=${TORRENTING_PORT}
-  #   volumes:
-  #     - /media/servarr/qbittorrent/config:/config
-  #     - /mnt/qnap/servarr:/data
-  #   restart: always
-  #   depends_on:
-  #     - gluetun
-
-# -----------------------------------------------------------
 # Sabnzbd Docker Compose Configuration
 # Description: Usenet download client
 # -----------------------------------------------------------
@@ -87,8 +59,6 @@ services:
     container_name: sabnzbd
     image: ghcr.io/hotio/sabnzbd
     network_mode: "service:gluetun" # Uses VPN network
-    # ports:
-    #  - "8080:8080"
     environment:
       - PUID=${PUID}
       - PGID=${PGID}
@@ -97,7 +67,7 @@ services:
       - WEBUI_PORTS=8081/tcp,8081/udp
       - ARGS
     volumes:
-      - /mnt/qnap/servarr/sabnzbd/config:/config
+      - /mnt/qnap/servarr/_applications/sabnzbd/config:/config
       - /mnt/qnap/servarr/usenet:/data/usenet
     restart: always
     depends_on:
@@ -117,7 +87,7 @@ services:
       - UMASK=${UMASK}
       - TZ=${TZ}
     volumes:
-      - /media/servarr/radarr/config:/config
+      - /mnt/qnap/servarr/_applications/radarr/config:/config
       - /mnt/qnap/servarr:/data
     restart: always
     depends_on:
@@ -137,7 +107,7 @@ services:
       - UMASK=${UMASK}
       - TZ=${TZ}
     volumes:
-      - /media/servarr/sonarr/config:/config
+      - /mnt/qnap/servarr/_applications/sonarr/config:/config
       - /mnt/qnap/servarr:/data
     restart: always
     depends_on:
@@ -157,7 +127,7 @@ services:
       - UMASK=${UMASK}
       - TZ=${TZ}
     volumes:
-      - /media/servarr/prowlarr/config:/config
+      - /mnt/qnap/servarr/_applications/prowlarr/config:/config
     restart: unless-stopped
     depends_on:
       - gluetun
@@ -176,31 +146,11 @@ services:
       - UMASK=${UMASK}
       - TZ=${TZ}
     volumes:
-      - /media/servarr/bazarr/config:/config
+      - /mnt/qnap/servarr/_applications/bazarr/config:/config      
       - /mnt/qnap/servarr:/data
     restart: always
     depends_on:
       - gluetun
-
-# -----------------------------------------------------------
-# Whisparr Docker Compose Configuration
-# Description: Music collection manager for automated downloads
-# -----------------------------------------------------------
-  # whisparr:
-  #   image: ghcr.io/hotio/whisparr
-  #   container_name: whisparr
-  #   network_mode: "service:gluetun" # Uses VPN network
-  #   environment:
-  #     - PUID=${PUID}
-  #     - PGID=${PGID}
-  #     - UMASK=${UMASK}
-  #     - TZ=${TZ}
-  #   volumes:
-  #     - /media/servarr/whisparr/config:/config
-  #     - /mnt/qnap/servarr:/data
-  #   restart: always
-  #   depends_on:
-  #     - gluetun
 
 # -----------------------------------------------------------
 # Notifiarr Docker Compose Configuration
@@ -214,30 +164,9 @@ services:
     ports:
       - "5454:5454"
     volumes:
-      - /media/servarr/notifiarr/config:/config
+      - /mnt/qnap/servarr/_applications/notifiarr/config:/config
       - /var/run/utmp:/var/run/utmp
       - /etc/machine-id:/etc/machine-id
-
-# -----------------------------------------------------------
-# Overseerr Docker Compose Configuration
-# Description: Request management for media requests
-# -----------------------------------------------------------
-  # overseerr:
-  #   container_name: overseerr
-  #   image: ghcr.io/hotio/overseerr
-  #   network_mode: "service:gluetun" # Uses VPN network
-  #   # ports:
-  #   #   - "5055:5055"
-  #   environment:
-  #     - PUID=${PUID}
-  #     - PGID=${PGID}
-  #     - UMASK=${UMASK}
-  #     - TZ=${TZ}
-  #   volumes:
-  #     - /media/servarr/overseerr/config:/config
-  #   restart: always
-  #   depends_on:
-  #     - gluetun
 
 # -----------------------------------------------------------
 # Jellyseerr Docker Compose Configuration
@@ -247,7 +176,6 @@ services:
   jellyseerr:
     container_name: jellyseerr
     image: ghcr.io/hotio/jellyseerr
-    # network_mode: "service:gluetun" # Uses VPN network
     ports:
       - "5055:5055"
     environment:
@@ -256,27 +184,8 @@ services:
       - UMASK=${UMASK}
       - TZ=${TZ}
     volumes:
-      - /media/servarr/jellyseerr/config:/config
+      - /mnt/qnap/servarr/_applications/jellyseerr/config:/config
     restart: always
-    # depends_on:
-    #   - gluetun
-
-# -----------------------------------------------------------
-# Configarr Docker Compose Configuration
-# Description: Configuration management for Servarr applications
-# -----------------------------------------------------------
-  # configarr:
-  #   image: ghcr.io/raydak-labs/configarr:latest
-  #   container_name: configarr
-  #   user: ${PUID}:${PGID} # Optional, defaults to root:root
-  #   environment:
-  #     - TZ=${TZ}
-  #   volumes:
-  #     - /media/servarr/configarr/config:/app/config # Contains the config.yml and secrets.yml
-  #     - /media/servarr/configarr/dockerrepos:/app/repos # Cache repositories
-  #     - /media/servarr/configarr/custom/cfs:/app/cfs # Optional if custom formats locally provided
-  #     - /media/servarr/configarr/custom/templates:/app/templates # Optional if custom templates
-  #   restart: "no" # optional make sure this is set to no or removed. Default is no
 
 # -----------------------------------------------------------
 # Jellyfin Docker Compose Configuration
@@ -294,11 +203,11 @@ services:
       - JELLYFIN_CACHE_DIR=/config/cache
       - JELLYFIN_TRANSCODING_TEMP_PATH=/config/cache/transcodes
     volumes:
-      - /media/servarr/jellyfin/config:/config
+      - /mnt/qnap/servarr/_applications/jellyfin/config:/config
       - /mnt/qnap/servarr:/data
     ports:
       - 8096:8096
-      - 8920:8920 #optional
+      - 8920:8920     #optional
       - 7359:7359/udp #optional
       - 1900:1900/udp #optional
     restart: always
@@ -323,7 +232,26 @@ services:
       - PLEX_BETA_INSTALL=${PLEX_BETA_INSTALL}
       - PLEX_PURGE_CODECS=${PLEX_PURGE_CODECS}
     volumes:
-      - /media/servarr/plex/config:/config
-      - /media/servarr/plex/transcode:/transcode
+      - /mnt/qnap/servarr/_applications/plex/config:/config
+      - /mnt/qnap/servarr/_applications/plex/transcode:/transcode
       - /mnt/qnap/servarr:/data
+    restart: always
+
+# -----------------------------------------------------------
+# Tautulli Docker Compose Configuration
+# Description: Monitoring and tracking for Plex Media Server
+# -----------------------------------------------------------
+  tautulli:
+    container_name: tautulli
+    image: ghcr.io/hotio/tautulli
+    ports:
+      - "8581:8181"
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - UMASK=${UMASK}
+      - TZ=${TZ}
+      - WEBUI_PORTS=8181/tcp,8181/udp
+    volumes:
+      - /mnt/qnap/servarr/_applications/tautulli/config:/config
     restart: always
