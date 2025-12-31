@@ -1,0 +1,40 @@
+---
+- name: Backup servarr config files
+- hosts: localhost
+  vars:
+    ansible_python_interpreter: auto_silent
+    src_dir: "/media/servarr/"
+    dest_dir: "/mnt/qnap/servarr/_applications/"
+  tasks:
+    - name: Ensure destination directory exists
+      file:
+        path: "{{ dest_dir }}"
+        state: directory
+        recurse: yes
+        owner: servarr
+        group: servarr
+        mode: '0755'
+
+    - name: Backup config files with permissions preserved
+      synchronize:
+        src: "{{ src_dir }}"
+        dest: "{{ dest_dir }}"
+        archive: yes
+        delete: no
+        recursive: yes
+        perms: yes
+        owner: yes
+        group: yes
+        times: yes
+        rsync_opts:
+          - "--chmod=Du=rwx,Dg=rx,Do=rx,Fu=rw,Fg=r,Fo=r"
+      delegate_to: localhost
+
+    # Optionally, you can add a task to verify permissions after copy
+    # - name: Fix permissions on destination
+    #   file:
+    #     path: "{{ dest_dir }}"
+    #     recurse: yes
+    #     owner: servarr
+    #     group: servarr
+    #     mode: '0755'
