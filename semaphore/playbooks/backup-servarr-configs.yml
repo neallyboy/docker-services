@@ -25,7 +25,7 @@
         times: yes
         rsync_opts:
           - "--chmod=Du=rwx,Dg=rx,Do=rx,Fu=rw,Fg=r,Fo=r"
-      delegate_to: localhost
+      # delegate_to removed so synchronize runs on the target host
 
     # Optionally, you can add a task to verify permissions after copy
     # - name: Fix permissions on destination
