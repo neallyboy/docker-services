@@ -11,8 +11,6 @@
         path: "{{ dest_dir }}"
         state: directory
         recurse: yes
-        owner: servarr
-        group: servarr
         mode: '0755'
 
     - name: Backup config files with permissions preserved
