@@ -1,12 +1,14 @@
 ---
 
-- name: Backup servarr config files
-  hosts: docker-lxc
-  vars:
-    ansible_python_interpreter: auto_silent
-    src_dir: "/media/servarr/"
-    dest_dir: "/mnt/qnap/servarr/_applications/"
-  tasks:
+ - name: Backup servarr config files
+   hosts: docker-lxc
+   become: true
+   become_user: servarr
+   vars:
+     ansible_python_interpreter: auto_silent
+     src_dir: "/media/servarr/"
+     dest_dir: "/mnt/qnap/servarr/_applications/"
+   tasks:
     - name: Ensure destination directory exists
       file:
         path: "{{ dest_dir }}"
