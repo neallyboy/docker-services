@@ -87,7 +87,7 @@ services:
       - UMASK=${UMASK}
       - TZ=${TZ}
     volumes:
-      - /mnt/qnap/servarr/_applications/radarr/config:/config
+      - /media/servarr/radarr/config:/config
       - /mnt/qnap/servarr:/data
     restart: always
     depends_on:
@@ -107,7 +107,7 @@ services:
       - UMASK=${UMASK}
       - TZ=${TZ}
     volumes:
-      - /mnt/qnap/servarr/_applications/sonarr/config:/config
+      - /media/servarr/sonarr/config:/config
       - /mnt/qnap/servarr:/data
     restart: always
     depends_on:
@@ -127,7 +127,7 @@ services:
       - UMASK=${UMASK}
       - TZ=${TZ}
     volumes:
-      - /mnt/qnap/servarr/_applications/prowlarr/config:/config
+      - /media/servarr/prowlarr/config:/config
     restart: unless-stopped
     depends_on:
       - gluetun
@@ -146,7 +146,7 @@ services:
       - UMASK=${UMASK}
       - TZ=${TZ}
     volumes:
-      - /mnt/qnap/servarr/_applications/bazarr/config:/config      
+      - /media/servarr/bazarr/config:/config      
       - /mnt/qnap/servarr:/data
     restart: always
     depends_on:
@@ -164,7 +164,7 @@ services:
     ports:
       - "5454:5454"
     volumes:
-      - /mnt/qnap/servarr/_applications/notifiarr/config:/config
+      - /media/servarr/notifiarr/config:/config
       - /var/run/utmp:/var/run/utmp
       - /etc/machine-id:/etc/machine-id
 
@@ -173,9 +173,28 @@ services:
 # Description: Media request management for Jellyfin
 # -----------------------------------------------------------
 
-  jellyseerr:
-    container_name: jellyseerr
-    image: ghcr.io/hotio/jellyseerr
+  # jellyseerr:
+  #   container_name: jellyseerr
+  #   image: ghcr.io/hotio/jellyseerr
+  #   ports:
+  #     - "5055:5055"
+  #   environment:
+  #     - PUID=${PUID}
+  #     - PGID=${PGID}
+  #     - UMASK=${UMASK}
+  #     - TZ=${TZ}
+  #   volumes:
+  #     - /mnt/qnap/servarr/_applications/jellyseerr/config:/config
+  #   restart: always
+
+# -----------------------------------------------------------
+# Seerr Docker Compose Configuration
+# Description: Media request management for Jellyfin
+# -----------------------------------------------------------
+
+  seerr:
+    container_name: seerr
+    image: ghcr.io/hotio/seerr
     ports:
       - "5055:5055"
     environment:
@@ -184,7 +203,7 @@ services:
       - UMASK=${UMASK}
       - TZ=${TZ}
     volumes:
-      - /mnt/qnap/servarr/_applications/jellyseerr/config:/config
+      - /media/servarr/seerr/config:/config
     restart: always
 
 # -----------------------------------------------------------
@@ -203,7 +222,7 @@ services:
       - JELLYFIN_CACHE_DIR=/config/cache
       - JELLYFIN_TRANSCODING_TEMP_PATH=/config/cache/transcodes
     volumes:
-      - /mnt/qnap/servarr/_applications/jellyfin/config:/config
+      - /media/servarr/jellyfin/config:/config
       - /mnt/qnap/servarr:/data
     ports:
       - 8096:8096
@@ -232,8 +251,8 @@ services:
       - PLEX_BETA_INSTALL=${PLEX_BETA_INSTALL}
       - PLEX_PURGE_CODECS=${PLEX_PURGE_CODECS}
     volumes:
-      - /mnt/qnap/servarr/_applications/plex/config:/config
-      - /mnt/qnap/servarr/_applications/plex/transcode:/transcode
+      - /media/servarr/plex/:/config
+      - /media/servarr/plex/transcode:/transcode
       - /mnt/qnap/servarr:/data
     restart: always
 
@@ -253,5 +272,5 @@ services:
       - TZ=${TZ}
       - WEBUI_PORTS=8181/tcp,8181/udp
     volumes:
-      - /mnt/qnap/servarr/_applications/tautulli/config:/config
+      - /media/servarr/tautulli/config:/config
     restart: always
