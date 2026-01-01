@@ -20,20 +20,3 @@
         dest: "{{ dest_dir }}"
         archive: yes
         delete: no
-        recursive: yes
-        perms: yes
-        owner: yes
-        group: yes
-        times: yes
-        rsync_opts:
-          - "--chmod=Du=rwx,Dg=rx,Do=rx,Fu=rw,Fg=r,Fo=r"
-      # delegate_to removed so synchronize runs on the target host
-
-    # Optionally, you can add a task to verify permissions after copy
-    # - name: Fix permissions on destination
-    #   file:
-    #     path: "{{ dest_dir }}"
-    #     recurse: yes
-    #     owner: servarr
-    #     group: servarr
-    #     mode: '0755'
