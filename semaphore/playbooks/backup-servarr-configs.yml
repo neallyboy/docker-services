@@ -7,6 +7,7 @@
    become_user: servarr
    vars:
      ansible_python_interpreter: auto_silent
+     ansible_remote_tmp: /tmp/ansible-remote
      src_dir: "/media/servarr/"
      dest_dir: "/mnt/qnap/servarr/_applications/"
    tasks:
