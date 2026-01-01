@@ -20,3 +20,4 @@
         dest: "{{ dest_dir }}"
         archive: yes
         delete: no
+        remote_src: yes
