@@ -2,6 +2,7 @@
 
  - name: Backup servarr config files
    hosts: docker-lxc
+   connection: local
    become: true
    become_user: servarr
    vars:
