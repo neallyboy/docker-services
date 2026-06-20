@@ -9,13 +9,13 @@ This repository contains multiple services configured to run using Docker. Below
 ### Run All Services
 To start all services defined in this repository:
 ```bash
-docker compose -f authentik/docker-compose.yml -f grafana/docker-compose.yml -f influxdb/docker-compose.yml -f it-tools/docker-compose.yml -f servarr/docker-compose.yml -f speedtest-tracker/docker-compose.yml up -d
+docker compose -f authentik/docker-compose.yml -f changedetection/docker-compose.yml -f dozzle/docker-compose.yml -f gotify/docker-compose.yml -f grafana/docker-compose.yml -f influxdb/docker-compose.yml -f it-tools/docker-compose.yml -f semaphore/docker-compose.yml -f servarr/docker-compose.yml -f speedtest-tracker/docker-compose.yml -f wud/docker-compose.yml up -d
 ```
 
 ### Stop All Services
 To stop all services:
 ```bash
-docker compose -f authentik/docker-compose.yml -f grafana/docker-compose.yml -f influxdb/docker-compose.yml -f it-tools/docker-compose.yml -f servarr/docker-compose.yml -f speedtest-tracker/docker-compose.yml down
+docker compose -f authentik/docker-compose.yml -f changedetection/docker-compose.yml -f dozzle/docker-compose.yml -f gotify/docker-compose.yml -f grafana/docker-compose.yml -f influxdb/docker-compose.yml -f it-tools/docker-compose.yml -f semaphore/docker-compose.yml -f servarr/docker-compose.yml -f speedtest-tracker/docker-compose.yml -f wud/docker-compose.yml down
 ```
 
 ---
@@ -130,6 +130,96 @@ Each service has its own `.env` file for configuration. Ensure these files are p
 - **Stop Command**:
   ```bash
   docker compose -f speedtest-tracker/docker-compose.yml down
+  ```
+
+---
+
+### 7. **Changedetection**
+- **Purpose**: Monitors web pages for changes and sends alerts.
+- **Update Command**:
+  ```bash
+  docker compose -f changedetection/docker-compose.yml pull
+  ```
+- **Start Command**:
+  The start command can be performed after the update command. The containers will be re-created using the latest local container
+  ```bash
+  docker compose -f changedetection/docker-compose.yml up -d
+  ```
+- **Stop Command**:
+  ```bash
+  docker compose -f changedetection/docker-compose.yml down
+  ```
+
+---
+
+### 8. **Dozzle**
+- **Purpose**: Real-time Docker container log viewer.
+- **Update Command**:
+  ```bash
+  docker compose -f dozzle/docker-compose.yml pull
+  ```
+- **Start Command**:
+  The start command can be performed after the update command. The containers will be re-created using the latest local container
+  ```bash
+  docker compose -f dozzle/docker-compose.yml up -d
+  ```
+- **Stop Command**:
+  ```bash
+  docker compose -f dozzle/docker-compose.yml down
+  ```
+
+---
+
+### 9. **Gotify**
+- **Purpose**: Self-hosted push notification server.
+- **Update Command**:
+  ```bash
+  docker compose -f gotify/docker-compose.yml pull
+  ```
+- **Start Command**:
+  The start command can be performed after the update command. The containers will be re-created using the latest local container
+  ```bash
+  docker compose -f gotify/docker-compose.yml up -d
+  ```
+- **Stop Command**:
+  ```bash
+  docker compose -f gotify/docker-compose.yml down
+  ```
+
+---
+
+### 10. **Semaphore**
+- **Purpose**: Web UI for running Ansible automation tasks.
+- **Update Command**:
+  ```bash
+  docker compose -f semaphore/docker-compose.yml pull
+  ```
+- **Start Command**:
+  The start command can be performed after the update command. The containers will be re-created using the latest local container
+  ```bash
+  docker compose -f semaphore/docker-compose.yml up -d
+  ```
+- **Stop Command**:
+  ```bash
+  docker compose -f semaphore/docker-compose.yml down
+  ```
+
+---
+
+### 11. **WUD (What's Up Docker)**
+- **Purpose**: Tracks Docker image updates and can trigger update workflows.
+- **Update Command**:
+  ```bash
+  docker compose -f wud/docker-compose.yml pull
+  ```
+- **Start Command**:
+  The start command can be performed after the update command. The containers will be re-created using the latest local container
+  ```bash
+  docker compose -f wud/docker-compose.yml up -d
+  ```
+- **Stop Command**:
+  ```bash
+  docker compose -f wud/docker-compose.yml down
   ```
 
 ---
