@@ -18,6 +18,12 @@ To stop all services:
 docker compose -f authentik/docker-compose.yml -f changedetection/docker-compose.yml -f dozzle/docker-compose.yml -f gotify/docker-compose.yml -f grafana/docker-compose.yml -f influxdb/docker-compose.yml -f it-tools/docker-compose.yml -f semaphore/docker-compose.yml -f servarr/docker-compose.yml -f speedtest-tracker/docker-compose.yml -f wud/docker-compose.yml down
 ```
 
+### Update All Services
+To pull the latest images for all services:
+```bash
+docker compose -f authentik/docker-compose.yml -f changedetection/docker-compose.yml -f dozzle/docker-compose.yml -f gotify/docker-compose.yml -f grafana/docker-compose.yml -f influxdb/docker-compose.yml -f it-tools/docker-compose.yml -f semaphore/docker-compose.yml -f servarr/docker-compose.yml -f speedtest-tracker/docker-compose.yml -f wud/docker-compose.yml pull
+```
+
 ---
 
 ## Services Overview
