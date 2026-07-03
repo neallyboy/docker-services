@@ -1,0 +1,13 @@
+#!/command/with-contenv bash
+# shellcheck shell=bash
+
+# Install Intel VA-API driver if not present
+if [[ ! -f /usr/lib/x86_64-linux-gnu/dri/iHD_drv_video.so ]]; then
+    apt-get update -qq && apt-get install -y -qq intel-media-va-driver vainfo
+fi
+
+# Create render group if it doesn't exist
+getent group render > /dev/null 2>&1 || groupadd -g 993 render
+
+# Add hotio to video and render groups
+usermod -a -G video,render hotio

@@ -240,6 +240,11 @@ services:
     image: ghcr.io/hotio/plex
     ports:
       - "32400:32400"
+    devices:
+      - /dev/dri:/dev/dri
+    group_add:
+      - "44"
+      - "993"
     environment:
       - PUID=${PUID}
       - PGID=${PGID}
@@ -254,6 +259,7 @@ services:
       - /media/servarr/plex/:/config
       - /media/servarr/plex/transcode:/transcode
       - /mnt/qnap/servarr:/data
+      - /root/docker_services/servarr/init-hook-app:/etc/s6-overlay/init-hook-app:ro
     restart: always
 
 # -----------------------------------------------------------
