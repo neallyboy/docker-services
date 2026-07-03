@@ -241,3 +241,33 @@ To view logs for a specific service:
 ```bash
 docker compose logs <service-name>
 ```
+
+### Docker Cleanup (Prune)
+Use prune commands to clean up unused Docker resources.
+
+- Prune unused data and volumes in one command:
+  ```bash
+  docker system prune --volumes
+  ```
+
+- Prune unused data (stopped containers, unused networks, dangling images, and build cache):
+  ```bash
+  docker system prune
+  ```
+
+- Prune everything above including unused images, without confirmation:
+  ```bash
+  docker system prune -a --volumes -f
+  ```
+
+- Prune unused volumes:
+  ```bash
+  docker volume prune
+  ```
+
+- Prune unused volumes without confirmation:
+  ```bash
+  docker volume prune -f
+  ```
+
+Be careful: prune commands permanently remove unused resources.
