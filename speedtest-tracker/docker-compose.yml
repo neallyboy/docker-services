@@ -20,6 +20,9 @@ services:
             - SPEEDTEST_SERVERS=${SPEEDTEST_SERVERS}
             - WUD_AUTH_BASIC_ADMIN_USER=${WUD_AUTH_BASIC_ADMIN_USER}
             - WUD_AUTH_BASIC_ADMIN_HASH=${WUD_AUTH_BASIC_ADMIN_HASH}
+            - TZ=${TZ}
+            - APP_TIMEZONE=${APP_TIMEZONE}
+            - DISPLAY_TIMEZONE=${DISPLAY_TIMEZONE}
         volumes:
             - /path/to/data:/config
             - /path/to-custom-ssl-keys:/config/keys
