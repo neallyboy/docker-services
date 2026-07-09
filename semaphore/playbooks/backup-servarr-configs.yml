@@ -22,4 +22,8 @@
         dest: "{{ dest_dir }}"
         archive: yes
         delete: no
+        rsync_opts:
+          - "--exclude=*.log"
+          - "--exclude=*.db-wal"
+          - "--exclude=*.db-shm"
       delegate_to: "{{ inventory_hostname }}"
