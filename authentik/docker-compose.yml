@@ -40,7 +40,6 @@ services:
     volumes:
     - ./data:/data
     - ./custom-templates:/templates
-    - ./media:/media
   worker:
     command: worker
     depends_on:
@@ -63,7 +62,6 @@ services:
     - ./data:/data
     - ./certs:/certs
     - ./custom-templates:/templates
-    - ./media:/media
 volumes:
   database:
     driver: local
