@@ -67,7 +67,7 @@ services:
       - WEBUI_PORTS=8081/tcp,8081/udp
       - ARGS
     volumes:
-      - /mnt/qnap/servarr/_applications/sabnzbd/config:/config
+      - /media/servarr/sabnzbd/config:/config
       - /mnt/qnap/servarr/usenet:/data/usenet
     restart: always
     depends_on:
