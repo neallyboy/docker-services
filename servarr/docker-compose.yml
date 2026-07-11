@@ -30,7 +30,6 @@ services:
       - 8989:8989                 # Sonarr
       - 9696:9696                 # Prowlarr
       - 8080:8080                 # qBittorrent WebUI
-      - 8081:8081                 # Sabnzbd WebUI
       - 6881:6881                 # qBittorrent
       - 6881:6881/udp             # qBittorrent
       - "${PORT:-8191}:8191"      # FlareSolverr
@@ -62,7 +61,9 @@ services:
   sabnzbd:
     container_name: sabnzbd
     image: ghcr.io/hotio/sabnzbd
-    network_mode: "service:gluetun" # Uses VPN network
+    ports:
+      - 8081:8081
+      - 8081:8081/udp
     environment:
       - PUID=${PUID}
       - PGID=${PGID}
@@ -75,8 +76,6 @@ services:
       - /mnt/sabnzbd-incomplete/incomplete:/incomplete-fast
       - /mnt/qnap/servarr/usenet:/data/usenet
     restart: always
-    depends_on:
-      - gluetun
 
 # -----------------------------------------------------------
 # Radarr Docker Compose Configuration
