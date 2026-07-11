@@ -68,6 +68,7 @@ services:
       - ARGS
     volumes:
       - /media/servarr/sabnzbd/config:/config
+      - /mnt/sabnzbd-incomplete/incomplete:/incomplete-fast
       - /mnt/qnap/servarr/usenet:/data/usenet
     restart: always
     depends_on:
