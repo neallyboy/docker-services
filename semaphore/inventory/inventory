@@ -4,6 +4,7 @@ pve01 ansible_host=192.168.10.88
 pve02 ansible_host=192.168.10.33
 pve03 ansible_host=192.168.10.99
 pbs ansible_host=192.168.10.160
+pve-datacenter-manager ansible_host=192.168.10.240
 
 # The following group variable sets the Python interpreter for all hosts in the [proxmox] group.
 # This avoids Python version warnings and makes it easy to change the interpreter in one place.
@@ -21,7 +22,6 @@ nginx ansible_host=192.168.10.93
 pihole ansible_host=192.168.10.55
 docker-lxc ansible_host=192.168.10.41
 prometheus ansible_host=192.168.10.64
-pve-datacenter-manager ansible_host=192.168.10.106
 pve-scripts-local ansible_host=192.168.10.126
 stirling-pdf ansible_host=192.168.10.8
 wordpress ansible_host=192.168.10.159
