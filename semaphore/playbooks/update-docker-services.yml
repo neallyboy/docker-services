@@ -8,8 +8,16 @@
         chdir: "/root/docker_services"
       register: pull_result
 
+    - name: Show output of pull command
+      debug:
+        var: pull_result.stdout_lines
+
     - name: Start {{ service_dir }} containers
       shell: docker compose -f {{ service_dir }}/docker-compose.yml up -d
       args:
         chdir: "/root/docker_services"
       register: up_result
+
+    - name: Show output of up command
+      debug:
+        var: up_result.stdout_lines

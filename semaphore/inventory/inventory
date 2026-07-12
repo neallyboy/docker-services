@@ -11,6 +11,11 @@ pve-datacenter-manager ansible_host=192.168.10.240
 [proxmox:vars]
 ansible_python_interpreter=/usr/bin/python3
 
+[pve_cluster]
+pve01
+pve02
+pve03
+
 [lxc]
 homarr ansible_host=192.168.10.202
 homeassistant ansible_host=192.168.10.128

@@ -9,6 +9,7 @@
       ansible.builtin.apt:
         update_cache: true
         cache_valid_time: 3600
+        lock_timeout: 60
 
     - name: Gather upgradable packages
       ansible.builtin.shell: apt list --upgradable | sed '/Listing.../d'
@@ -24,6 +25,7 @@
         upgrade: full
         autoremove: true
         autoclean: true
+        lock_timeout: 60
 
     - name: Check if reboot is required
       ansible.builtin.stat:
@@ -34,6 +36,22 @@
       ansible.builtin.debug:
         msg: "Reboot is required! Node will be restarted."
       when: reboot_required_file.stat.exists
+
+    - name: Verify cluster quorum before reboot
+      ansible.builtin.command: pvecm status
+      register: quorum_check_before
+      changed_when: false
+      when: reboot_required_file.stat.exists and inventory_hostname in groups['pve_cluster']
+
+    - name: Abort if cluster is not quorate
+      ansible.builtin.assert:
+        that: quorum_check_before.stdout is search('Quorate:\\s*Yes')
+        fail_msg: "Cluster is not quorate, refusing to reboot {{ inventory_hostname }}"
+      when: reboot_required_file.stat.exists and inventory_hostname in groups['pve_cluster']
+
+    - name: Enable HA maintenance mode
+      ansible.builtin.command: "ha-manager crm-command node-maintenance enable {{ inventory_hostname }}"
+      when: reboot_required_file.stat.exists and inventory_hostname in groups['pve_cluster']
 
     - name: Reboot if required
       ansible.builtin.reboot:
@@ -46,6 +64,19 @@
         timeout: 600
       when: reboot_required_file.stat.exists
 
+    - name: Disable HA maintenance mode
+      ansible.builtin.command: "ha-manager crm-command node-maintenance disable {{ inventory_hostname }}"
+      when: reboot_required_file.stat.exists and inventory_hostname in groups['pve_cluster']
+
+    - name: Verify cluster quorum after reboot
+      ansible.builtin.command: pvecm status
+      register: quorum_check_after
+      until: quorum_check_after.stdout is search('Quorate:\\s*Yes')
+      retries: 12
+      delay: 10
+      changed_when: false
+      when: reboot_required_file.stat.exists and inventory_hostname in groups['pve_cluster']
+
     - name: Wait for Ceph cluster health to be OK or WARN
       ansible.builtin.shell: ceph health
       register: ceph_health_result
@@ -53,5 +84,4 @@
       retries: 30
       delay: 10
       changed_when: false
-      when: reboot_required_file.stat.exists and (inventory_hostname == groups['proxmox'][-1] or inventory_hostname != groups['proxmox'][-1])
-
+      when: reboot_required_file.stat.exists and inventory_hostname in groups['pve_cluster']

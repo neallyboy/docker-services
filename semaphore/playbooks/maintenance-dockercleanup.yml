@@ -12,8 +12,8 @@
       debug:
         var: image_prune_result.stdout
 
-    - name: Prune all unused Docker data including volumes (docker-lxc)
-      shell: docker system prune --volumes --all -f
+    - name: Prune unused Docker data, excluding volumes (docker-lxc)
+      shell: docker system prune --all -f
       register: prune_result
       changed_when: "'Total reclaimed space: 0B' not in prune_result.stdout"
 
