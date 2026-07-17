@@ -3,7 +3,7 @@
     ansible_python_interpreter: auto_silent
   tasks:
     - name: Pull latest {{ service_dir }} images
-      shell: docker compose -f {{ service_dir }}/docker-compose.yml pull
+      shell: docker compose -f {{ service_dir }}/docker-compose.yml pull 2>&1
       args:
         chdir: "/root/docker_services"
       register: pull_result
@@ -13,7 +13,7 @@
         var: pull_result.stdout_lines
 
     - name: Start {{ service_dir }} containers
-      shell: docker compose -f {{ service_dir }}/docker-compose.yml up -d
+      shell: docker compose -f {{ service_dir }}/docker-compose.yml up -d 2>&1
       args:
         chdir: "/root/docker_services"
       register: up_result
