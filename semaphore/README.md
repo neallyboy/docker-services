@@ -18,10 +18,8 @@ playbook via `ansible-playbook`.
   present in `/root/.ssh/authorized_keys` on every host referenced in the
   `proxmox` and `lxc` inventory groups, including `docker-lxc` itself — jobs
   that target `docker-lxc` still connect over SSH like any other host.
-- **Templates vs. playbooks**: 13 Semaphore templates exist, but only 4 distinct
-  playbook files back them — 10 of the templates share one parameterized
-  playbook (`update-docker-services.yml`) via a per-template Semaphore
-  Environment. See the table below.
+- **Templates vs. playbooks**: 4 distinct playbook files, 4 Semaphore
+  templates — one template per playbook. See the table below.
 - **Schedule timezone**: `America/Toronto` (`SEMAPHORE_SCHEDULE_TIMEZONE`).
 - **Alerting**: every job failure posts to Gotify (`SEMAPHORE_GOTIFY_URL`).
 
@@ -52,49 +50,57 @@ just checking reboot-required) — flagging for whoever touches this playbook
 next.
 
 ### `update-docker-services.yml`
-**Targets:** `docker-lxc` only
+**Template:** `update-docker-services` · **Schedule:** daily 01:00 · **Targets:** `docker-lxc` only
 
-Generic two-task playbook used by 10 separate templates, each pointed at a
-different subdirectory under `/root/docker_services/` on `docker-lxc` via a
-`service_dir` variable supplied by a per-template Semaphore **Environment**
-(Project → Environments), not by the playbook itself:
+Single consolidated job that pulls + (re)starts every docker-compose stack
+under `/root/docker_services/` on `docker-lxc`. The list of stacks to manage
+lives in `semaphore/vars/docker_services.yml`, loaded via `vars_files` — **not**
+a per-template Semaphore Environment. To bring a new stack under automatic
+updates, add its folder name to that file, commit, and push; no Semaphore UI
+changes needed.
 
 ```yaml
-- name: Pull latest {{ service_dir }} images
-  shell: docker compose -f {{ service_dir }}/docker-compose.yml pull
-  args: { chdir: "/root/docker_services" }
+- hosts: docker-lxc
+  vars_files:
+    - ../vars/docker_services.yml
+  tasks:
+    - name: Pull latest images for each stack
+      shell: docker compose -f {{ item }}/docker-compose.yml pull
+      loop: "{{ docker_service_dirs }}"
 
-- name: Start {{ service_dir }} containers
-  shell: docker compose -f {{ service_dir }}/docker-compose.yml up -d
-  args: { chdir: "/root/docker_services" }
+    - name: Start each stack
+      shell: docker compose -f {{ item }}/docker-compose.yml up -d
+      loop: "{{ docker_service_dirs }}"
 ```
 
-This is a `docker compose pull && docker compose up -d` per stack — pulls the
-latest image tag and recreates the container if it changed. No image pinning
-or rollback; whatever tag the compose file specifies (commonly `latest`) is
-what gets deployed.
+This is a `docker compose pull && docker compose up -d` per stack, run for
+every entry in `docker_service_dirs` — pulls the latest image tag and
+recreates the container if it changed. No image pinning or rollback;
+whatever tag the compose file specifies (commonly `latest`) is what gets
+deployed.
 
-| Template | Environment (`service_dir`) | Schedule |
-|---|---|---|
-| update-docker-image-authentik | `authentik` | daily 01:00 |
-| update-docker-image-grafana | `grafana` | daily 01:05 |
-| update-docker-image-influxdb | `influxdb` | daily 01:10 |
-| update-docker-image-it-tools | `it-tools` | daily 01:15 |
-| update-docker-image-servarr | `servarr` | daily 01:20 |
-| update-docker-image-speedtest-tracker | `speedtest-tracker` | daily 01:25 |
-| update-docker-image-wud | `wud` | daily 01:30 |
-| update-docker-image-gotify | `gotify` | daily 01:35 |
-| update-docker-image-changedetection | `changedetection` | daily 01:40 |
-| update-docker-image-dozzle | `dozzle` | daily 01:45 |
+Current entries in `docker_service_dirs` (`semaphore/vars/docker_services.yml`):
+authentik, changedetection, dozzle, gotify, grafana, influxdb, it-tools,
+servarr, speedtest-tracker, wud.
 
-Times are staggered 5 minutes apart, presumably to avoid every stack pulling
-images concurrently and saturating disk/network I/O on `docker-lxc`.
+Deliberately **not** in this list: `semaphore` itself (updating semaphore's
+own containers mid-run risks killing the job that's doing the updating —
+it's covered by `wud` watching for new images instead) and `portainer`
+(updated separately via the Proxmox community helper-script, not compose
+pull).
+
+**History:** prior to 2026-07-18 this was 10 separate Semaphore templates,
+each pointed at the same playbook with a different `service_dir` supplied via
+a per-template Environment, staggered 5 minutes apart (01:00-01:45) to avoid
+saturating disk/network I/O on `docker-lxc`. Consolidated into one template
+and one schedule once the loop-over-a-list approach made staggering
+unnecessary — the shell tasks run sequentially within the single job anyway.
 
 ### `maintenance-dockercleanup.yml`
 **Template:** `maintenance-dockercleanup` · **Schedule:** daily 02:00 · **Targets:** `docker-lxc`
 
 Reclaims disk space after the nightly image pulls (runs at 02:00, after the
-01:00-01:45 pulls above, before the 03:00 PVE apt run):
+01:00 pull/up job above, before the 03:00 PVE apt run):
 
 1. `docker image prune -a -f` — removes all images not referenced by a
    running container (including old tags left behind by the pulls above)

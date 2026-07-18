@@ -1,0 +1,15 @@
+---
+# Directories under /root/docker_services on docker-lxc that the consolidated
+# update-docker-services Semaphore job pulls + (re)starts, one per line.
+# To bring a new stack under automatic updates, add its folder name here.
+docker_service_dirs:
+  - authentik
+  - changedetection
+  - dozzle
+  - gotify
+  - grafana
+  - influxdb
+  - it-tools
+  - servarr
+  - speedtest-tracker
+  - wud
