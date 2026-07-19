@@ -8,6 +8,6 @@ services:
     ports:
       - '3000:3000'
     volumes:
-    - /mnt/qnap/docker_services/grafana/data:/var/lib/grafana # chmod -R 777 /mnt/qnap/docker_services/grafana/data
+    - ./data:/var/lib/grafana
 # volumes:
 #   grafana-storage: {}
