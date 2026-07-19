@@ -4,7 +4,8 @@ services:
         image: 'corentinth/it-tools:latest'
         container_name: it-tools
         labels:
-            - wud.trigger=dockercompose:it-tools
+            - wud.trigger.include=dockercompose.ittools,gotify.local
+            - wud.watch.digest=true
         ports:
             - 32768:80
         restart: always

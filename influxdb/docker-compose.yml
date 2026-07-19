@@ -3,7 +3,7 @@ services:
     image: influxdb:2
     container_name: influxdb2
     labels:
-      - wud.trigger=dockercompose:influxdb2
+      - wud.trigger.include=dockercompose.influxdb2,gotify.local
     restart: always
     ports:
       - 8086:8086

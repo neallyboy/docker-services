@@ -28,7 +28,8 @@ services:
       - 3001:3000
     image: semaphoreui/semaphore:latest
     labels:
-      - wud.trigger=dockercompose:semaphore
+      - wud.trigger.include=dockercompose.semaphore,gotify.local
+      - wud.watch.digest=true
     environment:
       SEMAPHORE_DB_USER: semaphore
       SEMAPHORE_DB_PASS: ${MYSQL_PASSWORD}
