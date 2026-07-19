@@ -10,18 +10,27 @@
         chdir: "/root/docker_services"
       loop: "{{ docker_service_dirs }}"
       register: pull_result
+      changed_when: false
 
     - name: Show output of pull commands
       debug:
         var: pull_result.results
 
-    - name: Start each stack
+    - name: Start each stack (recreates a container only if its image changed)
       shell: docker compose -f {{ item }}/docker-compose.yml up -d 2>&1
       args:
         chdir: "/root/docker_services"
       loop: "{{ docker_service_dirs }}"
       register: up_result
+      changed_when: up_result.stdout is search('(?i)(recreate|creating|starting)')
 
     - name: Show output of up commands
       debug:
         var: up_result.results
+
+    - name: Summary - which stacks were actually updated
+      debug:
+        msg: "{{ item.item }}: {{ 'UPDATED (container recreated)' if item.changed else 'already up to date' }}"
+      loop: "{{ up_result.results }}"
+      loop_control:
+        label: "{{ item.item }}"
