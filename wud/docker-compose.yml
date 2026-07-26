@@ -2,6 +2,8 @@ services:
   whatsupdocker:
     image: getwud/wud
     container_name: wud
+    labels:
+      - wud.watch.digest=true
     environment:
       - TZ=America/Toronto
       - WUD_AUTH_BASIC_ADMIN_USER=${WUD_AUTH_BASIC_ADMIN_USER}

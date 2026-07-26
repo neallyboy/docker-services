@@ -7,6 +7,8 @@ services:
   gluetun:
     image: qmcgaw/gluetun
     container_name: gluetun
+    labels:
+      - wud.watch.digest=true
     cap_add:
       - NET_ADMIN
     devices:
@@ -44,6 +46,8 @@ services:
   flaresolverr:
     image: ghcr.io/flaresolverr/flaresolverr:latest
     container_name: flaresolverr
+    labels:
+      - wud.watch.digest=true
     network_mode: "service:gluetun" # Uses VPN network
     environment:
       - LOG_LEVEL=${LOG_LEVEL}
@@ -60,6 +64,8 @@ services:
 # -----------------------------------------------------------
   sabnzbd:
     container_name: sabnzbd
+    labels:
+      - wud.watch.digest=true
     image: ghcr.io/hotio/sabnzbd
     ports:
       - 8081:8081
@@ -84,6 +90,8 @@ services:
   radarr:
     image: ghcr.io/hotio/radarr
     container_name: radarr
+    labels:
+      - wud.watch.digest=true
     network_mode: "service:gluetun" # Uses VPN network
     environment:
       - PUID=${PUID}
@@ -104,6 +112,8 @@ services:
   sonarr:
     image: ghcr.io/hotio/sonarr
     container_name: sonarr
+    labels:
+      - wud.watch.digest=true
     network_mode: "service:gluetun" # Uses VPN network
     environment:
       - PUID=${PUID}
@@ -124,6 +134,8 @@ services:
   prowlarr:
     image: ghcr.io/hotio/prowlarr
     container_name: prowlarr
+    labels:
+      - wud.watch.digest=true
     network_mode: "service:gluetun" # Uses VPN network
     environment:
       - PUID=${PUID}
@@ -143,6 +155,8 @@ services:
   bazarr:
     image: ghcr.io/hotio/bazarr
     container_name: bazarr
+    labels:
+      - wud.watch.digest=true
     network_mode: "service:gluetun" # Uses VPN network
     environment:
       - PUID=${PUID}
@@ -162,6 +176,8 @@ services:
 # -----------------------------------------------------------
   notifiarr:
     container_name: notifiarr
+    labels:
+      - wud.watch.digest=true
     hostname: notifiarr
     image: golift/notifiarr
     restart: unless-stopped
@@ -198,6 +214,8 @@ services:
 
   seerr:
     container_name: seerr
+    labels:
+      - wud.watch.digest=true
     image: ghcr.io/hotio/seerr
     ports:
       - "5055:5055"
@@ -217,6 +235,8 @@ services:
   jellyfin:
     image: ghcr.io/hotio/jellyfin
     container_name: jellyfin
+    labels:
+      - wud.watch.digest=true
     environment:
       - PUID=${PUID}
       - PGID=${PGID}
@@ -241,6 +261,8 @@ services:
 # -----------------------------------------------------------
   plex:
     container_name: plex
+    labels:
+      - wud.watch.digest=true
     image: ghcr.io/hotio/plex
     ports:
       - "32400:32400"
@@ -272,6 +294,8 @@ services:
 # -----------------------------------------------------------
   tautulli:
     container_name: tautulli
+    labels:
+      - wud.watch.digest=true
     image: ghcr.io/hotio/tautulli
     ports:
       - "8581:8181"

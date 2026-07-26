@@ -3,6 +3,8 @@ services:
   dozzle:
     image: amir20/dozzle:latest
     container_name: dozzle
+    labels:
+      - wud.watch.digest=true
     # labels:
     #   - homepage.group=Docker Containers
     #   - homepage.name=Dozzle

@@ -2,6 +2,8 @@ services:
     changedetection:
       image: ghcr.io/dgtlmoon/changedetection.io
       container_name: changedetection
+      labels:
+        - wud.watch.digest=true
       hostname: changedetection
       volumes:
         - ./data:/datastore

@@ -1,6 +1,8 @@
 services:
   gotify:
     image: gotify/server
+    labels:
+      - wud.watch.digest=true
     ports:
       - 8087:80
     environment:
