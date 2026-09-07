@@ -1,0 +1,12 @@
+services:
+  scrypted:
+    image: ghcr.io/koush/scrypted
+    container_name: scrypted
+    network_mode: host
+    environment:
+      - SCRYPTED_DOCKER_AVAHI=true
+    volumes:
+      - ./volume:/server/volume
+    restart: unless-stopped
+    labels:
+      - wud.watch.digest=true
