@@ -119,6 +119,14 @@ Each service has its own `.env` file for configuration. Ensure these files are p
   ```bash
   docker compose -f servarr/docker-compose.yml down
   ```
+- **Boot order (gluetun)**: radarr, sonarr, prowlarr, bazarr and flaresolverr share
+  gluetun's network namespace. On boot, Docker restarts containers without waiting for
+  gluetun, so some of them fail to start. `servarr/servarr-reconcile.service` runs
+  `docker compose up --no-recreate` after Docker starts, which starts anything that was
+  missed once gluetun is healthy. Install it once on the docker LXC:
+  ```bash
+  systemctl enable /root/docker_services/servarr/servarr-reconcile.service
+  ```
 
 ---
 

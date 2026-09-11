@@ -1,0 +1,29 @@
+# Starts servarr containers that Docker's own restart policy misses at boot.
+#
+# radarr, sonarr, prowlarr, bazarr and flaresolverr share gluetun's network
+# namespace (network_mode: service:gluetun). When the LXC boots, dockerd
+# restarts every container at once without waiting for gluetun, so any that
+# start first fail with "cannot join network namespace" and are never retried.
+# docker compose does honour depends_on, so running `compose up` once dockerd
+# has finished its own restarts brings back whatever was missed, in order.
+# It only starts containers: it never recreates, pulls or builds anything.
+#
+# Install on the docker LXC (links this file, so the repo stays the source):
+#   systemctl enable /root/docker_services/servarr/servarr-reconcile.service
+# Check after a boot:
+#   systemctl status servarr-reconcile; journalctl -u servarr-reconcile -b
+
+[Unit]
+Description=Start servarr containers missed at boot (gluetun network race)
+Requires=docker.service
+After=docker.service network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+WorkingDirectory=/root/docker_services/servarr
+ExecStart=/usr/bin/docker compose up --detach --no-recreate --no-build --pull never
+TimeoutStartSec=600
+
+[Install]
+WantedBy=multi-user.target

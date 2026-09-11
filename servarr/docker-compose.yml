@@ -56,7 +56,9 @@ services:
       - TZ=${TZ}
     restart: always
     depends_on:
-      - gluetun
+      gluetun:
+        condition: service_healthy   # wait for the VPN to be up, not just the container
+        restart: true                # restart this service if compose restarts gluetun
 
 # -----------------------------------------------------------
 # Sabnzbd Docker Compose Configuration
@@ -103,7 +105,9 @@ services:
       - /mnt/qnap/servarr:/data
     restart: always
     depends_on:
-      - gluetun
+      gluetun:
+        condition: service_healthy   # wait for the VPN to be up, not just the container
+        restart: true                # restart this service if compose restarts gluetun
 
 # -----------------------------------------------------------
 # Sonarr Docker Compose Configuration
@@ -125,7 +129,9 @@ services:
       - /mnt/qnap/servarr:/data
     restart: always
     depends_on:
-      - gluetun
+      gluetun:
+        condition: service_healthy   # wait for the VPN to be up, not just the container
+        restart: true                # restart this service if compose restarts gluetun
 
 # -----------------------------------------------------------
 # Prowlarr Docker Compose Configuration
@@ -146,7 +152,9 @@ services:
       - /media/servarr/prowlarr/config:/config
     restart: unless-stopped
     depends_on:
-      - gluetun
+      gluetun:
+        condition: service_healthy   # wait for the VPN to be up, not just the container
+        restart: true                # restart this service if compose restarts gluetun
 
 # -----------------------------------------------------------
 # Bazarr Docker Compose Configuration
@@ -168,7 +176,9 @@ services:
       - /mnt/qnap/servarr:/data
     restart: always
     depends_on:
-      - gluetun
+      gluetun:
+        condition: service_healthy   # wait for the VPN to be up, not just the container
+        restart: true                # restart this service if compose restarts gluetun
 
 # -----------------------------------------------------------
 # Notifiarr Docker Compose Configuration
