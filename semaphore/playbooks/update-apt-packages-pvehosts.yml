@@ -32,41 +32,70 @@
         path: /var/run/reboot-required
       register: reboot_required_file
 
+    # Proxmox kernel packages never create /var/run/reboot-required, so on its
+    # own that check never rebooted a host for a kernel update (hosts drifted
+    # several kernels behind). Compare the running kernel with the one the next
+    # boot will use: the pinned kernel if there is one, else the newest in
+    # /boot. Containers run their host's kernel, so they are skipped.
+    - name: Check whether a newer kernel is waiting for a reboot
+      ansible.builtin.shell: |
+        set -eu
+        if systemd-detect-virt --container --quiet; then
+          echo "KERNEL_OK container"; exit 0
+        fi
+        running=$(uname -r)
+        target=$(proxmox-boot-tool kernel list 2>/dev/null | awk '/^Pinned kernel:/ {getline; print $1; exit}')
+        if [ -z "$target" ]; then
+          target=$(ls /boot/vmlinuz-* 2>/dev/null | sed 's|^/boot/vmlinuz-||' | sort -V | tail -n 1)
+        fi
+        if [ -n "$target" ] && [ "$running" != "$target" ]; then
+          echo "KERNEL_REBOOT running=$running target=$target"
+        else
+          echo "KERNEL_OK running=$running target=${target:-none}"
+        fi
+      register: kernel_check
+      changed_when: false
+
+    - name: Decide whether this host needs a reboot
+      ansible.builtin.set_fact:
+        needs_reboot: "{{ reboot_required_file.stat.exists or kernel_check.stdout is search('^KERNEL_REBOOT') }}"
+        kernel_target: "{{ kernel_check.stdout | regex_replace('^.*target=(\\S*).*$', '\\1') }}"
+
     - name: Show if reboot is required
       ansible.builtin.debug:
-        msg: "Reboot is required! Node will be restarted."
-      when: reboot_required_file.stat.exists
+        msg: "Reboot is required! Node will be restarted. ({{ kernel_check.stdout }}; reboot-required file: {{ reboot_required_file.stat.exists }})"
+      when: needs_reboot | bool
 
     - name: Verify cluster quorum before reboot
       ansible.builtin.command: pvecm status
       register: quorum_check_before
       changed_when: false
-      when: reboot_required_file.stat.exists and inventory_hostname in groups['pve_cluster']
+      when: needs_reboot | bool and inventory_hostname in groups['pve_cluster']
 
     - name: Abort if cluster is not quorate
       ansible.builtin.assert:
         that: quorum_check_before.stdout is search('Quorate:\\s*Yes')
         fail_msg: "Cluster is not quorate, refusing to reboot {{ inventory_hostname }}"
-      when: reboot_required_file.stat.exists and inventory_hostname in groups['pve_cluster']
+      when: needs_reboot | bool and inventory_hostname in groups['pve_cluster']
 
     - name: Enable HA maintenance mode
       ansible.builtin.command: "ha-manager crm-command node-maintenance enable {{ inventory_hostname }}"
-      when: reboot_required_file.stat.exists and inventory_hostname in groups['pve_cluster']
+      when: needs_reboot | bool and inventory_hostname in groups['pve_cluster']
 
     - name: Reboot if required
       ansible.builtin.reboot:
         msg: "Reboot initiated by Ansible after upgrades."
         reboot_timeout: 900
-      when: reboot_required_file.stat.exists
+      when: needs_reboot | bool
 
     - name: Wait for node to become reachable after reboot
       ansible.builtin.wait_for_connection:
         timeout: 600
-      when: reboot_required_file.stat.exists
+      when: needs_reboot | bool
 
     - name: Disable HA maintenance mode
       ansible.builtin.command: "ha-manager crm-command node-maintenance disable {{ inventory_hostname }}"
-      when: reboot_required_file.stat.exists and inventory_hostname in groups['pve_cluster']
+      when: needs_reboot | bool and inventory_hostname in groups['pve_cluster']
 
     - name: Verify cluster quorum after reboot
       ansible.builtin.command: pvecm status
@@ -75,7 +104,7 @@
       retries: 12
       delay: 10
       changed_when: false
-      when: reboot_required_file.stat.exists and inventory_hostname in groups['pve_cluster']
+      when: needs_reboot | bool and inventory_hostname in groups['pve_cluster']
 
     # Gate on Ceph's actual state, not the health status. Accepting HEALTH_WARN
     # let the next node reboot while PGs were still degraded from this one.
@@ -101,4 +130,14 @@
       retries: 60
       delay: 10
       changed_when: false
-      when: reboot_required_file.stat.exists and inventory_hostname in groups['pve_cluster']
+      when: needs_reboot | bool and inventory_hostname in groups['pve_cluster']
+
+    # A kernel reboot that doesn't land on the expected kernel (e.g. GRUB not
+    # defaulting to the newest entry) would otherwise reboot this host again on
+    # every run. Fail loudly instead, which also stops the rolling update here.
+    - name: Verify the expected kernel is running after the reboot
+      ansible.builtin.command: uname -r
+      register: kernel_after
+      changed_when: false
+      failed_when: kernel_after.stdout != kernel_target
+      when: needs_reboot | bool and kernel_check.stdout is search('^KERNEL_REBOOT')

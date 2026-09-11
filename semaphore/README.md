@@ -34,17 +34,23 @@ cluster is never mid-upgrade on more than one node simultaneously:
 1. `apt update` (cache valid 1h)
 2. List and display upgradable packages
 3. `apt full-upgrade` + autoremove/autoclean
-4. Check `/var/run/reboot-required`. If present:
+4. Decide whether to reboot: `/var/run/reboot-required` exists, **or** the running
+   kernel differs from the one the next boot will use (the pinned kernel if any,
+   else the newest in `/boot`; skipped in containers). Proxmox kernel packages never
+   create `/var/run/reboot-required`, so before 2026-09-11 this job never rebooted a
+   host for a kernel update. If a reboot is needed:
    - refuse to reboot unless `pvecm status` is quorate (cluster nodes only)
    - enable HA maintenance mode on the node (cluster nodes only)
    - reboot and wait for the node to come back (`wait_for_connection`, 600s timeout)
    - disable HA maintenance mode, then poll `pvecm status` until quorate
      (12 retries / 10s apart; cluster nodes only)
-5. If a reboot happened on a cluster node, poll `ceph status -f json` until
+5. After a kernel reboot, fail if the host did not come up on the expected kernel
+   (stops the rolling update instead of rebooting that host again on every run)
+6. If a reboot happened on a cluster node, poll `ceph status -f json` until
    all PGs are `active+clean`, all OSDs are up and in, and all monitors are in
    quorum (up to 60 retries / 10s apart) before moving to the next host
 
-**Why step 5 checks Ceph's state and not `ceph health` (changed 2026-09-11):**
+**Why step 6 checks Ceph's state and not `ceph health` (changed 2026-09-11):**
 it used to accept `HEALTH_OK` or `HEALTH_WARN`. `HEALTH_WARN` is also what
 Ceph reports while PGs are still degraded right after the rebooted node's OSD
 rejoins, so the next node could reboot mid-recovery (two OSDs down freezes
