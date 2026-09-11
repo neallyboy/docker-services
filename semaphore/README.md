@@ -34,20 +34,25 @@ cluster is never mid-upgrade on more than one node simultaneously:
 1. `apt update` (cache valid 1h)
 2. List and display upgradable packages
 3. `apt full-upgrade` + autoremove/autoclean
-4. Check `/var/run/reboot-required`; if present, reboot and wait for the node
-   to come back (`wait_for_connection`, 600s timeout)
-5. If a reboot happened, poll `ceph health` until `HEALTH_OK` or `HEALTH_WARN`
-   (up to 30 retries / 10s apart) before moving to the next host
+4. Check `/var/run/reboot-required`. If present:
+   - refuse to reboot unless `pvecm status` is quorate (cluster nodes only)
+   - enable HA maintenance mode on the node (cluster nodes only)
+   - reboot and wait for the node to come back (`wait_for_connection`, 600s timeout)
+   - disable HA maintenance mode, then poll `pvecm status` until quorate
+     (12 retries / 10s apart; cluster nodes only)
+5. If a reboot happened on a cluster node, poll `ceph status -f json` until
+   all PGs are `active+clean`, all OSDs are up and in, and all monitors are in
+   quorum (up to 60 retries / 10s apart) before moving to the next host
 
-**Note:** the `when` condition on the final Ceph-health task —
-`inventory_hostname == groups['proxmox'][-1] or inventory_hostname != groups['proxmox'][-1]`
-— is always true (it's a tautology covering both branches of its own
-comparison), so in practice the clause does nothing beyond the
-`reboot_required_file.stat.exists` check already ANDed with it. Looks like a
-leftover from an attempt to only wait for Ceph health after the last host in
-the group. Not fixed as part of this pass since it's harmless (equivalent to
-just checking reboot-required) — flagging for whoever touches this playbook
-next.
+**Why step 5 checks Ceph's state and not `ceph health` (changed 2026-09-11):**
+it used to accept `HEALTH_OK` or `HEALTH_WARN`. `HEALTH_WARN` is also what
+Ceph reports while PGs are still degraded right after the rebooted node's OSD
+rejoins, so the next node could reboot mid-recovery (two OSDs down freezes
+I/O on a 3-node, `min_size=2` pool). Separately, since Ceph 20.2.4 the health
+status can read `HEALTH_ERR` for reasons that do not affect data (the
+`AUTH_INSECURE_*` key-type checks), which would block the job. See the
+homelab-ops runbook
+`runbooks/2026-09-10-rolling-upgrade-kernel-ceph-gpu-card-renumber.md`.
 
 ### `update-docker-services.yml`
 **Template:** `update-docker-services` · **Schedule:** daily 01:00 · **Targets:** `docker-lxc` only

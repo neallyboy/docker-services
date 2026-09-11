@@ -77,11 +77,28 @@
       changed_when: false
       when: reboot_required_file.stat.exists and inventory_hostname in groups['pve_cluster']
 
-    - name: Wait for Ceph cluster health to be OK or WARN
-      ansible.builtin.shell: ceph health
-      register: ceph_health_result
-      until: ceph_health_result.stdout is search('HEALTH_OK') or ceph_health_result.stdout is search('HEALTH_WARN')
-      retries: 30
+    # Gate on Ceph's actual state, not the health status. Accepting HEALTH_WARN
+    # let the next node reboot while PGs were still degraded from this one.
+    # And since Ceph 20.2.4 the status can read HEALTH_ERR for reasons that do
+    # not affect data (the AUTH_INSECURE_* key-type checks), which blocked the
+    # job entirely. See homelab-ops
+    # runbooks/2026-09-10-rolling-upgrade-kernel-ceph-gpu-card-renumber.md
+    - name: Wait for Ceph to recover (all PGs active+clean, all OSDs up and in, all mons in quorum)
+      ansible.builtin.command: ceph status -f json
+      register: ceph_status_result
+      until:
+        - ceph_status_result.rc == 0
+        - (ceph_status_result.stdout | from_json).pgmap.pgs_by_state
+          | selectattr('state_name', 'equalto', 'active+clean')
+          | map(attribute='count') | sum
+          == (ceph_status_result.stdout | from_json).pgmap.num_pgs
+        - (ceph_status_result.stdout | from_json).osdmap.num_up_osds
+          == (ceph_status_result.stdout | from_json).osdmap.num_osds
+        - (ceph_status_result.stdout | from_json).osdmap.num_in_osds
+          == (ceph_status_result.stdout | from_json).osdmap.num_osds
+        - (ceph_status_result.stdout | from_json).quorum_names | length
+          == (ceph_status_result.stdout | from_json).monmap.num_mons
+      retries: 60
       delay: 10
       changed_when: false
       when: reboot_required_file.stat.exists and inventory_hostname in groups['pve_cluster']
