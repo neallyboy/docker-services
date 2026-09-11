@@ -2,7 +2,7 @@
 ## Proxmox VE → Unprivileged LXC → Docker → hotio/plex
 
 > **Status:** ✅ Production  
-> **Last Updated:** 2026-07-02  
+> **Last Updated:** 2026-09-11  
 > **Author:** Neal Miran
 
 ---
@@ -26,6 +26,7 @@
 - [File Reference](#file-reference)
 - [Migration Guide](#migration-guide)
 - [Troubleshooting](#troubleshooting)
+- [Changelog](#changelog)
 
 ---
 
@@ -37,12 +38,14 @@ The key challenge is passing the Intel iGPU (`/dev/dri`) through three layers of
 
 ```
 Proxmox Host (bare metal)
-  └── LXC Container CT102 (unprivileged)
+  └── LXC 112 "docker" (unprivileged)
         └── Docker
               └── hotio/plex container
 ```
 
 Quick Sync offloads video encode/decode to the Intel iGPU, dramatically reducing CPU load and enabling more simultaneous transcodes. With a Plex Pass lifetime subscription, this unlocks hardware-accelerated H.264 encode and HEVC decode.
+
+> **Only the render node is passed through (since 2026-09-10).** Quick Sync needs `/dev/dri/renderD128` and nothing else. The card node (`/dev/dri/card0` or `card1`) was removed because its number changes between boots: the early boot framebuffer driver `simpledrm` takes DRM minor 0 on some boots and not others, pushing the Intel GPU between `card0` and `card1`. A hardcoded card path made LXC 112 refuse to start twice (2026-08-26 and 2026-09-10). `renderD128` never moves, because simpledrm does not create a render node. See the homelab-ops runbook `runbooks/2026-09-10-rolling-upgrade-kernel-ceph-gpu-card-renumber.md`.
 
 ---
 
@@ -52,7 +55,8 @@ Quick Sync offloads video encode/decode to the Intel iGPU, dramatically reducing
 |-----------|--------|
 | Hypervisor | Proxmox VE (Trixie/Debian 13) |
 | Cluster | 3-node (pve01, pve02, pve03) |
-| Docker LXC | CT102, unprivileged, Ubuntu 24.04 |
+| Docker LXC | LXC 112 (`docker`), unprivileged, Debian 13 (trixie), pinned to pve01 |
+| GPU passthrough | `dev0: /dev/dri/renderD128,gid=993` only (no card node) |
 | Docker image | `ghcr.io/hotio/plex` |
 | Plex subscription | Lifetime Plex Pass |
 | Active transcode node | **pve01** (best iGPU) |
@@ -66,34 +70,34 @@ Quick Sync offloads video encode/decode to the Intel iGPU, dramatically reducing
 │                   PROXMOX HOST (pve01)                  │
 │                                                         │
 │  Intel i7-6700 (Skylake)                                │
-│  HD Graphics 530 — Quick Sync                           │
+│  HD Graphics 530 - Quick Sync                           │
 │                                                         │
-│  /dev/dri/card0       (226:0,  video:44)                │
-│  /dev/dri/renderD128  (226:128, render:993)             │
+│  /dev/dri/card0 or card1  (number varies per boot)      │
+│  /dev/dri/renderD128      (226:128, render:993, stable) │
 │                                                         │
-│  udev rule → crw-rw-rw- (0666) on all /dev/dri/*       │
+│  udev rule -> crw-rw-rw- (0666) on all /dev/dri/*       │
 │                                                         │
 │  ┌───────────────────────────────────────────────────┐  │
-│  │         LXC CT102 (unprivileged, Ubuntu 24.04)    │  │
+│  │      LXC 112 "docker" (unprivileged, Debian 13)   │  │
 │  │                                                   │  │
-│  │  dev0: /dev/dri/card0,gid=44                      │  │
-│  │  dev1: /dev/dri/renderD128,gid=993                │  │
-│  │  (Proxmox 8.2+ native device passthrough)         │  │
+│  │  dev0: /dev/dri/renderD128,gid=993                │  │
+│  │  (no card node - see Overview)                    │  │
 │  │                                                   │  │
-│  │  /dev/dri/card0      → root:video  crw-rw----     │  │
-│  │  /dev/dri/renderD128 → root:render crw-rw----     │  │
+│  │  /dev/dri/renderD128 -> root:993 crw-rw----       │  │
+│  │  (gid 993 is named "kvm" inside this Debian LXC)  │  │
 │  │                                                   │  │
 │  │  ┌─────────────────────────────────────────────┐  │  │
 │  │  │         Docker: hotio/plex container        │  │  │
 │  │  │                                             │  │  │
-│  │  │  devices: /dev/dri:/dev/dri                 │  │  │
+│  │  │  devices:   /dev/dri:/dev/dri               │  │  │
+│  │  │  group_add: 44, 993                         │  │  │
 │  │  │                                             │  │  │
 │  │  │  init-hook-app:                             │  │  │
 │  │  │  ├── installs intel-media-va-driver         │  │  │
 │  │  │  ├── creates render group (gid=993)         │  │  │
-│  │  │  └── adds hotio → video + render groups     │  │  │
+│  │  │  └── adds hotio -> video + render groups    │  │  │
 │  │  │                                             │  │  │
-│  │  │  VA-API → iHD driver → Quick Sync ✅        │  │  │
+│  │  │  VA-API -> iHD driver -> Quick Sync ✅      │  │  │
 │  │  └─────────────────────────────────────────────┘  │  │
 │  └───────────────────────────────────────────────────┘  │
 └─────────────────────────────────────────────────────────┘
@@ -117,7 +121,7 @@ Quick Sync offloads video encode/decode to the Intel iGPU, dramatically reducing
 
 | Property | Value |
 |----------|-------|
-| Machine | Dell OptiPlex 7010 SFF |
+| Machine | Dell OptiPlex 3046 |
 | CPU | Intel Core i7-6700 @ 3.40GHz |
 | iGPU | HD Graphics 530 (Skylake, 6th Gen) |
 | EU Count | 24 Execution Units |
@@ -128,36 +132,36 @@ Quick Sync offloads video encode/decode to the Intel iGPU, dramatically reducing
 | HEVC/H.265 Encode | ❌ Not supported |
 | VP8 Decode | ✅ |
 | JPEG Encode/Decode | ✅ |
-| `/dev/dri` | card0 (226:0), renderD128 (226:128) |
+| `/dev/dri` | renderD128 (226:128), stable. Card node is card0 or card1 depending on the boot |
 
 ### pve02 — Fallback Node ⚠️ (Limited)
 
 | Property | Value |
 |----------|-------|
-| Machine | Dell OptiPlex 3040 SFF |
+| Machine | Dell OptiPlex 7010 |
 | CPU | Intel Core i7-3770 @ 3.40GHz |
 | iGPU | HD Graphics 4000 (Ivy Bridge, 3rd Gen) |
-| VA-API Driver | Intel iHD |
+| VA-API Driver | **Not verified.** `vainfo` is not installed on this host. The iHD driver does not support Ivy Bridge; this generation needs the older `i965-va-driver` |
 | H.264 Decode | ✅ |
 | H.264 Encode | ✅ |
 | HEVC/H.265 | ❌ Not supported (too old) |
-| `/dev/dri` | card1 (226:1), renderD128 (226:128) |
+| `/dev/dri` | renderD128 (226:128). Card node was card1 on the 2026-09-10 boot (simpledrm took card0) |
 
-> ⚠️ pve02 uses `card1` instead of `card0`. The LXC `dev0` entry must reference `/dev/dri/card1` if migrating here.
+> The capability rows above are from Intel's specs for this generation, not tested on this host.
 
 ### pve03 — Fallback Node ✅ (Same GPU as pve01)
 
 | Property | Value |
 |----------|-------|
-| Machine | Dell OptiPlex 3046 SFF |
+| Machine | Dell OptiPlex 3040 |
 | CPU | Intel Core i3-6100 @ 3.70GHz |
 | iGPU | HD Graphics 530 (Skylake, 6th Gen) |
-| VA-API Driver | Intel iHD |
+| VA-API Driver | Intel iHD expected (same GPU as pve01). **Not verified**: `vainfo` is not installed on this host |
 | H.264 Decode | ✅ |
 | H.264 Encode | ✅ |
 | HEVC/H.265 Decode | ✅ |
 | HEVC/H.265 Encode | ❌ |
-| `/dev/dri` | card0 (226:0), renderD128 (226:128) |
+| `/dev/dri` | renderD128 (226:128). Card node was card0 on the 2026-09-10 boot |
 
 ---
 
@@ -187,6 +191,8 @@ crw-rw---- 1 root video  226,   0 ... card0
 crw-rw---- 1 root render 226, 128 ... renderD128
 ```
 
+The card node may be `card1` instead of `card0` on a given boot. That is expected and does not matter, because only `renderD128` is passed through.
+
 If `/dev/dri` is empty or missing, check BIOS to ensure iGPU is enabled.
 
 ---
@@ -198,6 +204,8 @@ On each Proxmox node (Debian Trixie):
 ```bash
 apt update && apt install -y vainfo intel-media-va-driver
 ```
+
+As of 2026-09-10 this is only installed on pve01. Install it on pve02/pve03 before relying on them for transcoding.
 
 Verify Quick Sync is functional:
 
@@ -239,46 +247,37 @@ crw-rw-rw- 1 root video  226,   0 ... card0
 crw-rw-rw- 1 root render 226, 128 ... renderD128
 ```
 
-> The wildcard `card[0-9]*` handles pve02's `card1` device name automatically.
+> Present on all three nodes (verified 2026-09-10). The `card` rule is harmless now that no card node is passed through.
 
 ---
 
 ### Step 4 — Add Device Passthrough to LXC Config
 
-On the **active Proxmox node** hosting CT102, edit the LXC config:
+On pve01, pass through the render node only:
 
 ```bash
-nano /etc/pve/lxc/102.conf
+pct set 112 -dev0 /dev/dri/renderD128,gid=993
 ```
 
-Add at the bottom:
+This writes `dev0: /dev/dri/renderD128,gid=993` to `/etc/pve/lxc/112.conf`.
 
-```
-dev0: /dev/dri/card0,gid=44
-dev1: /dev/dri/renderD128,gid=993
-```
-
-> **Note for pve02:** Use `card1` instead of `card0`:
-> ```
-> dev0: /dev/dri/card1,gid=44
-> ```
+> **Do not add the card node** (`/dev/dri/card0` or `card1`). Quick Sync does not need it, and its number changes between boots, which stops the LXC from starting with `Device /dev/dri/cardN does not exist`. See the note in [Overview](#overview).
 
 Then reboot the LXC:
 
 ```bash
-pct reboot 102
+pct reboot 112
 ```
 
-Verify devices are visible inside the LXC:
+Verify the device is visible inside the LXC:
 
 ```bash
-pct exec 102 -- ls -la /dev/dri/
+pct exec 112 -- ls -la /dev/dri/
 ```
 
-Expected:
+Expected (gid 993 shows as `kvm` inside this Debian LXC; the number is what matters):
 ```
-crw-rw---- 1 root video  226,   0 ... card0
-crw-rw---- 1 root render 226, 128 ... renderD128
+crw-rw---- 1 root kvm 226, 128 ... renderD128
 ```
 
 > **Why `dev0`/`dev1` instead of `lxc.cgroup2` + `lxc.mount.entry`?**  
@@ -325,19 +324,27 @@ chmod +x /root/docker_services/servarr/init-hook-app
 
 ### Step 6 — Update Docker Compose
 
-The Plex service in `servarr/docker-compose.yml` requires two additions:
+The Plex service in `servarr/docker-compose.yml` needs:
 
-1. `devices` — maps `/dev/dri` from the LXC into the container
-2. A volume mount for `init-hook-app`
+1. `devices`: maps `/dev/dri` from the LXC into the container (only `renderD128` is in there)
+2. `group_add`: adds the container's processes to gid 44 (video) and 993 (render). 44 was for the card node and is harmless now
+3. A volume mount for `init-hook-app`
+
+This matches the live file (verified 2026-09-10):
 
 ```yaml
   plex:
     container_name: plex
+    labels:
+      - wud.watch.digest=true
     image: ghcr.io/hotio/plex
     ports:
       - "32400:32400"
     devices:
       - /dev/dri:/dev/dri
+    group_add:
+      - "44"
+      - "993"
     environment:
       - PUID=${PUID}
       - PGID=${PGID}
@@ -402,6 +409,8 @@ Video: 1080p (H.264) (hw)
 
 The `(hw)` tag on both lines confirms Quick Sync encode and decode are active.
 
+Re-verified 2026-09-10 with only `renderD128` passed through: `vainfo` inside the container (iHD 24.1.0) reported H.264 decode, H.264 encode and HEVC decode, and a forced lower-quality playback showed **(hw)**.
+
 ---
 
 ## File Reference
@@ -418,60 +427,38 @@ KERNEL=="card[0-9]*", SUBSYSTEM=="drm", MODE="0666"
 KERNEL=="renderD[0-9]*", SUBSYSTEM=="drm", MODE="0666"
 ```
 
-### `/etc/pve/lxc/102.conf` additions (on active node)
+### `/etc/pve/lxc/112.conf` (on pve01)
 ```
-dev0: /dev/dri/card0,gid=44
-dev1: /dev/dri/renderD128,gid=993
+dev0: /dev/dri/renderD128,gid=993
 ```
 
 ---
 
 ## Migration Guide
 
-If CT102 is migrated to a different Proxmox node:
+**LXC 112 cannot be migrated as it stands.** It is pinned to pve01 by:
 
-### Automatic (no action needed)
-- `docker-compose.yml` — travels with the git repo
-- `init-hook-app` — travels with the git repo
-- Plex settings — stored in `/media/servarr/plex/config` (QNAP volume)
-- LXC config `dev0`/`dev1` lines — Proxmox migrates these automatically
+- `mp2`: a 300G `local-lvm` volume on pve01's own disk (SABnzbd incomplete downloads)
+- `mp0`/`mp1`: bind mounts of QNAP NFS shares that are mounted on the pve01 host itself
 
-### Manual (required on destination node)
+Moving it means rebuilding those on the target node first. If that ever happens:
 
-**1. Verify udev rule exists** (already done on all 3 nodes):
-```bash
-cat /etc/udev/rules.d/99-dri-permissions.rules
-ls -la /dev/dri/
-# Should show crw-rw-rw-
-```
+- **GPU:** nothing to change. `dev0: /dev/dri/renderD128,gid=993` works on any node, because there is no card number to fix up.
+- **udev rule:** already present on all three nodes.
+- **VA-API driver:** install `vainfo intel-media-va-driver` on the target and check `vainfo` first. Only pve01 has it today.
+- **pve03** has the same GPU as pve01 (HD Graphics 530) and should behave the same.
+- **pve02** is Ivy Bridge: no HEVC in hardware, and the iHD driver does not support it (it needs `i965-va-driver`). Plex bundles its own drivers, so test a real transcode for `(hw)` rather than trusting `vainfo`.
 
-**2. Verify LXC config device entries survived migration:**
-```bash
-grep "dev0\|dev1" /etc/pve/lxc/102.conf
-```
-
-If missing, re-add:
-```bash
-nano /etc/pve/lxc/102.conf
-# Add:
-# dev0: /dev/dri/card0,gid=44    (use card1 on pve02)
-# dev1: /dev/dri/renderD128,gid=993
-```
-
-**3. Special case — migrating to pve02:**
-
-pve02 uses `card1` not `card0`. Update the LXC config:
-```bash
-# On pve02 after migration:
-sed -i 's|dev0: /dev/dri/card0|dev0: /dev/dri/card1|' /etc/pve/lxc/102.conf
-pct reboot 102
-```
-
-> ⚠️ pve02 (Ivy Bridge) does not support HEVC hardware encode/decode. Plex will fall back to software transcoding for H.265 content when hosted on pve02.
+The compose file, `init-hook-app` and Plex settings (`/media/servarr/plex` on the LXC rootfs, which is on Ceph) travel with the container.
 
 ---
 
 ## Troubleshooting
+
+### LXC fails to start: `Device /dev/dri/cardN does not exist`
+- A card node (`card0`/`card1`) is configured as a `devN` entry. Its number depends on whether `simpledrm` registered first on this boot.
+- Fix: remove it and keep only the render node, e.g. `pct set 112 --delete dev1`, then `pct start 112`.
+- Check which driver took which minor: `journalctl -k -b | grep "\[drm\] Initialized"`.
 
 ### `/dev/dri` is empty or missing on Proxmox host
 - Check BIOS: ensure Intel iGPU is enabled
@@ -504,9 +491,14 @@ pct reboot 102
 4. Check Plex logs: `docker logs plex | grep -i "hardware\|transcode\|vaapi"`
 
 ### `vainfo` shows no profiles on pve02
-- Ivy Bridge (i7-3770) does not support HEVC — this is expected
-- H.264 should still work; if not, check driver installation
+- Ivy Bridge (i7-3770) does not support HEVC in hardware; this is expected
+- The iHD driver does not support Ivy Bridge at all. Use `LIBVA_DRIVER_NAME=i965 vainfo` after installing `i965-va-driver`
 
 ---
 
-*Generated from a live setup session on 2026-07-02. All commands verified working on Proxmox VE (Trixie), CT102 Ubuntu 24.04 LXC, hotio/plex (Plex 1.43.2).*
+## Changelog
+
+- **2026-09-10:** removed the card node from the LXC passthrough (`renderD128` only) after it renumbered and blocked LXC 112 from starting a second time. Updated for LXC 112 on Debian 13 (was CT102 on Ubuntu 24.04), the live compose (`group_add`, WUD label), corrected node machine models, marked pve02/pve03 driver details as unverified, and replaced the migration guide (LXC 112 is pinned to pve01). Re-verified `(hw)` transcoding.
+- **2026-07-02:** initial guide.
+
+*Generated from a live setup session on 2026-07-02 (Proxmox VE Trixie, CT102 Ubuntu 24.04 LXC, hotio/plex, Plex 1.43.2). Updated from the live system on 2026-09-10.*
