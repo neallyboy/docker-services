@@ -8,6 +8,12 @@
 # has finished its own restarts brings back whatever was missed, in order.
 # It only starts containers: it never recreates, pulls or builds anything.
 #
+# gluetun's own healthcheck allows only 10s before failures count, and the VPN
+# can take 40s+ to connect at boot, so gluetun can report "unhealthy" on its
+# way to healthy. Compose gives up on the first "unhealthy" (seen 2026-09-11),
+# so ExecStartPre waits for a real "healthy" first (up to 5 minutes), and a
+# failed run is retried (at most 3 times in 30 minutes, then left failed).
+#
 # Install on the docker LXC (links this file, so the repo stays the source):
 #   systemctl enable /root/docker_services/servarr/servarr-reconcile.service
 # Check after a boot:
@@ -18,11 +24,16 @@ Description=Start servarr containers missed at boot (gluetun network race)
 Requires=docker.service
 After=docker.service network-online.target
 Wants=network-online.target
+StartLimitIntervalSec=1800
+StartLimitBurst=3
 
 [Service]
 Type=oneshot
 WorkingDirectory=/root/docker_services/servarr
+ExecStartPre=/bin/sh -c 'for i in $$(seq 1 60); do [ "$$(docker inspect -f "{{.State.Health.Status}}" gluetun 2>/dev/null)" = healthy ] && exit 0; sleep 5; done; echo "gluetun not healthy after 5 minutes" >&2; exit 1'
 ExecStart=/usr/bin/docker compose up --detach --no-recreate --no-build --pull never
+Restart=on-failure
+RestartSec=30
 TimeoutStartSec=600
 
 [Install]
