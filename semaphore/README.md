@@ -26,11 +26,13 @@ playbook via `ansible-playbook`.
 ## Playbooks
 
 ### `update-apt-packages-pvehosts.yml`
-**Template:** `update-apt-packages-pve-hosts` · **Schedule:** daily 03:00 · **Targets:** `proxmox` group (pve01, pve02, pve03, pbs)
+**Template:** `update-apt-packages-pve-hosts` · **Schedule:** daily 03:00 · **Targets:** `proxmox` group (pve02, pve03, pbs, pve-datacenter-manager, then pve01 last)
 
 Updates apt packages one host at a time (`serial: 1`) so the Proxmox/Ceph
 cluster is never mid-upgrade on more than one node simultaneously:
 
+0. Fail straight away unless the host in the `[semaphore_host]` group (pve01, where
+   Semaphore itself runs in LXC 112) is the last host in `[proxmox]`
 1. `apt update` (cache valid 1h)
 2. List and display upgradable packages
 3. `apt full-upgrade` + autoremove/autoclean
@@ -49,6 +51,14 @@ cluster is never mid-upgrade on more than one node simultaneously:
 6. If a reboot happened on a cluster node, poll `ceph status -f json` until
    all PGs are `active+clean`, all OSDs are up and in, and all monitors are in
    quorum (up to 60 retries / 10s apart) before moving to the next host
+7. **pve01 (the Semaphore host) is handled differently**, because rebooting it
+   in-line would kill this job. It gets the quorum check, then, for a kernel
+   update, a check that GRUB's first entry (`GRUB_DEFAULT=0`) is the target kernel
+   so it can't end up rebooting every night. Then `shutdown -r +3`, so the job
+   finishes first. There is no HA maintenance mode and nothing checks pve01 or Ceph
+   after that reboot; the next run's kernel check confirms the kernel. While pve01
+   reboots, its guests (pihole, NPM, the docker LXC with Semaphore and Plex, immich,
+   Home Assistant, homepage, homelabhero) are down for a few minutes.
 
 **Why step 6 checks Ceph's state and not `ceph health` (changed 2026-09-11):**
 it used to accept `HEALTH_OK` or `HEALTH_WARN`. `HEALTH_WARN` is also what

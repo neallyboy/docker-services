@@ -5,6 +5,15 @@
   gather_facts: false
   serial: 1
   tasks:
+    # Semaphore runs inside LXC 112 on pve01, so rebooting pve01 in-line would
+    # kill this job partway through. That host has to come last, and its
+    # reboot is scheduled to happen after the job ends (end of this play).
+    - name: Make sure the host running Semaphore is updated last
+      ansible.builtin.assert:
+        that: (groups['semaphore_host'] | default([]) | length == 0) or (ansible_play_hosts_all[-1] in groups['semaphore_host'])
+        fail_msg: "{{ groups['semaphore_host'] | default([]) | join(', ') }} runs Semaphore and must be the last host in the [proxmox] inventory group"
+      run_once: true
+
     - name: Update apt cache
       ansible.builtin.apt:
         update_cache: true
@@ -45,13 +54,15 @@
         fi
         running=$(uname -r)
         target=$(proxmox-boot-tool kernel list 2>/dev/null | awk '/^Pinned kernel:/ {getline; print $1; exit}')
+        via=pin
         if [ -z "$target" ]; then
           target=$(ls /boot/vmlinuz-* 2>/dev/null | sed 's|^/boot/vmlinuz-||' | sort -V | tail -n 1)
+          via=newest
         fi
         if [ -n "$target" ] && [ "$running" != "$target" ]; then
-          echo "KERNEL_REBOOT running=$running target=$target"
+          echo "KERNEL_REBOOT running=$running target=$target via=$via"
         else
-          echo "KERNEL_OK running=$running target=${target:-none}"
+          echo "KERNEL_OK running=$running target=${target:-none} via=$via"
         fi
       register: kernel_check
       changed_when: false
@@ -60,6 +71,7 @@
       ansible.builtin.set_fact:
         needs_reboot: "{{ reboot_required_file.stat.exists or kernel_check.stdout is search('^KERNEL_REBOOT') }}"
         kernel_target: "{{ kernel_check.stdout | regex_replace('^.*target=(\\S*).*$', '\\1') }}"
+        is_semaphore_host: "{{ inventory_hostname in (groups['semaphore_host'] | default([])) }}"
 
     - name: Show if reboot is required
       ansible.builtin.debug:
@@ -80,22 +92,22 @@
 
     - name: Enable HA maintenance mode
       ansible.builtin.command: "ha-manager crm-command node-maintenance enable {{ inventory_hostname }}"
-      when: needs_reboot | bool and inventory_hostname in groups['pve_cluster']
+      when: needs_reboot | bool and inventory_hostname in groups['pve_cluster'] and not is_semaphore_host | bool
 
     - name: Reboot if required
       ansible.builtin.reboot:
         msg: "Reboot initiated by Ansible after upgrades."
         reboot_timeout: 900
-      when: needs_reboot | bool
+      when: needs_reboot | bool and not is_semaphore_host | bool
 
     - name: Wait for node to become reachable after reboot
       ansible.builtin.wait_for_connection:
         timeout: 600
-      when: needs_reboot | bool
+      when: needs_reboot | bool and not is_semaphore_host | bool
 
     - name: Disable HA maintenance mode
       ansible.builtin.command: "ha-manager crm-command node-maintenance disable {{ inventory_hostname }}"
-      when: needs_reboot | bool and inventory_hostname in groups['pve_cluster']
+      when: needs_reboot | bool and inventory_hostname in groups['pve_cluster'] and not is_semaphore_host | bool
 
     - name: Verify cluster quorum after reboot
       ansible.builtin.command: pvecm status
@@ -104,7 +116,7 @@
       retries: 12
       delay: 10
       changed_when: false
-      when: needs_reboot | bool and inventory_hostname in groups['pve_cluster']
+      when: needs_reboot | bool and inventory_hostname in groups['pve_cluster'] and not is_semaphore_host | bool
 
     # Gate on Ceph's actual state, not the health status. Accepting HEALTH_WARN
     # let the next node reboot while PGs were still degraded from this one.
@@ -130,7 +142,7 @@
       retries: 60
       delay: 10
       changed_when: false
-      when: needs_reboot | bool and inventory_hostname in groups['pve_cluster']
+      when: needs_reboot | bool and inventory_hostname in groups['pve_cluster'] and not is_semaphore_host | bool
 
     # A kernel reboot that doesn't land on the expected kernel (e.g. GRUB not
     # defaulting to the newest entry) would otherwise reboot this host again on
@@ -140,4 +152,22 @@
       register: kernel_after
       changed_when: false
       failed_when: kernel_after.stdout != kernel_target
-      when: needs_reboot | bool and kernel_check.stdout is search('^KERNEL_REBOOT')
+      when: needs_reboot | bool and kernel_check.stdout is search('^KERNEL_REBOOT') and not is_semaphore_host | bool
+
+    # The Semaphore host can't be rebooted in-line (the job runs on it), so it
+    # is last and its reboot is scheduled for after the job ends. No HA
+    # maintenance mode (nothing would switch it off again) and no checks after
+    # the reboot; the next run's kernel check confirms it. Guard against a
+    # nightly reboot loop first: these hosts boot through GRUB with
+    # GRUB_DEFAULT=0, so the first menu entry must be the target kernel.
+    # (A pinned kernel is an explicit admin choice and is not checked here.)
+    - name: Check the Semaphore host's next boot uses the expected kernel
+      ansible.builtin.shell: grep -m1 -oE 'vmlinuz-[^ ]+' /boot/grub/grub.cfg | sed 's/^vmlinuz-//'
+      register: grub_next
+      changed_when: false
+      failed_when: grub_next.stdout != kernel_target
+      when: needs_reboot | bool and is_semaphore_host | bool and kernel_check.stdout is search('^KERNEL_REBOOT .* via=newest')
+
+    - name: Schedule the Semaphore host's reboot for after this job ends
+      ansible.builtin.command: shutdown -r +3 "Reboot scheduled by Semaphore after upgrades"
+      when: needs_reboot | bool and is_semaphore_host | bool
