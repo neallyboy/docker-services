@@ -34,7 +34,7 @@ pihole ansible_host=192.168.10.55
 docker-lxc ansible_host=192.168.10.41
 prometheus ansible_host=192.168.10.64
 pve-scripts-local ansible_host=192.168.10.126
-stirling-pdf ansible_host=192.168.10.8
+stirling-pdf ansible_host=192.168.10.233
 wordpress ansible_host=192.168.10.159
 
 [docker]
