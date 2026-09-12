@@ -71,7 +71,7 @@ homelab-ops runbook
 `runbooks/2026-09-10-rolling-upgrade-kernel-ceph-gpu-card-renumber.md`.
 
 ### `update-docker-services.yml`
-**Template:** `update-docker-services` · **Schedule:** daily 01:00 · **Targets:** `docker-lxc` only
+**Template:** `update-docker-services` · **Schedule:** daily 01:20 · **Targets:** `docker-lxc` only
 
 Single consolidated job that pulls + (re)starts every docker-compose stack
 under `/root/docker_services/` on `docker-lxc`. The list of stacks to manage
@@ -121,21 +121,24 @@ unnecessary — the shell tasks run sequentially within the single job anyway.
 **Template:** `maintenance-dockercleanup` · **Schedule:** daily 02:00 · **Targets:** `docker-lxc`
 
 Reclaims disk space after the nightly image pulls (runs at 02:00, after the
-01:00 pull/up job above, before the 03:00 PVE apt run):
+01:20 pull/up job above, before the 03:00 PVE apt run):
 
-1. `docker image prune -a -f` — removes all images not referenced by a
-   running container (including old tags left behind by the pulls above)
-2. `docker system prune --volumes --all -f` — also removes stopped
-   containers, unused networks, build cache, **and unused volumes**
+1. `docker image prune -a -f` removes every image no container uses
+   (including old tags left behind by the pulls above)
+2. `docker builder prune -a -f` removes the build cache
+3. `docker network prune -f` removes unused networks
 
-The `changed_when` on both tasks only reports a change if reclaimed space is
-non-zero, so a clean run shows `ok` rather than `changed`.
+The `changed_when` on each task only reports a change if something was
+removed, so a clean run shows `ok` rather than `changed`.
 
-**Caution:** `--volumes` on the second prune will delete any Docker volume
-not currently attached to a running container. Compose stacks that store
-state in named volumes are safe only as long as their containers are running
-when this job fires nightly; a stack that's manually stopped for
-maintenance risks losing its volume the next time this job runs.
+**Stopped containers and volumes are never pruned (changed 2026-09-12).**
+Step 2 used to be `docker system prune --all -f`, which also deletes stopped
+containers. On 2026-09-12 the 01:20 update job left five servarr containers
+created but not started (gluetun wasn't healthy in time), and the 02:00 run
+deleted them, and then their images. Sonarr, radarr, prowlarr, bazarr and
+flaresolverr were down for about 10 hours until someone ran
+`docker compose up -d --no-recreate`. A stopped container is now left in
+place, which also keeps its image from being pruned.
 
 ### `backup-servarr-configs.yml`
 **Template:** `backup-servarr-config-giles` · **Schedule:** none (manual trigger only) · **Targets:** `docker-lxc`

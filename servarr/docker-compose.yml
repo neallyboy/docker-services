@@ -38,6 +38,20 @@ services:
       - 6767:6767                 # Bazarr
       - 6969:6969                 # Whisparr
     restart: always
+    # Same check as the image's built-in one, with a longer start_period. The
+    # built-in check allows only 10s before failures count, but the VPN can
+    # take 40s+ to connect, so gluetun went "unhealthy" on its way to healthy
+    # and compose gave up starting the containers that depend on it (nightly
+    # update job, 2026-09-12). Failed checks inside start_period don't count,
+    # so `compose up` now waits for the VPN instead. start_interval keeps
+    # polling every 5s during startup so dependents start as soon as it's up.
+    healthcheck:
+      test: ["CMD-SHELL", "/gluetun-entrypoint healthcheck"]
+      interval: 5s
+      timeout: 5s
+      retries: 3
+      start_period: 2m
+      start_interval: 5s
 
 # -----------------------------------------------------------
 # Flaresolverr Docker Compose Configuration

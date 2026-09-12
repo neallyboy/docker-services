@@ -127,6 +127,11 @@ Each service has its own `.env` file for configuration. Ensure these files are p
   ```bash
   systemctl enable /root/docker_services/servarr/servarr-reconcile.service
   ```
+- **gluetun healthcheck**: the compose file gives gluetun a 2-minute `start_period`
+  instead of the image's 10 seconds, so `docker compose up` waits for the VPN to
+  connect rather than failing with `dependency failed to start: container gluetun
+  is unhealthy`. That failure hit the nightly update job on 2026-09-12 when a new
+  gluetun image was pulled.
 
 ---
 

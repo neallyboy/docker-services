@@ -8,11 +8,13 @@
 # has finished its own restarts brings back whatever was missed, in order.
 # It only starts containers: it never recreates, pulls or builds anything.
 #
-# gluetun's own healthcheck allows only 10s before failures count, and the VPN
-# can take 40s+ to connect at boot, so gluetun can report "unhealthy" on its
-# way to healthy. Compose gives up on the first "unhealthy" (seen 2026-09-11),
-# so ExecStartPre waits for a real "healthy" first (up to 5 minutes), and a
-# failed run is retried (at most 3 times in 30 minutes, then left failed).
+# gluetun's built-in healthcheck allows only 10s before failures count, and the
+# VPN can take 40s+ to connect at boot, so gluetun could report "unhealthy" on
+# its way to healthy. Compose gives up on the first "unhealthy" (seen
+# 2026-09-11). docker-compose.yml now gives gluetun a 2m start_period (added
+# 2026-09-12), and ExecStartPre still waits for a real "healthy" first (up to
+# 5 minutes) as a second guard. A failed run is retried (at most 3 times in 30
+# minutes, then left failed).
 #
 # Install on the docker LXC (links this file, so the repo stays the source):
 #   systemctl enable /root/docker_services/servarr/servarr-reconcile.service

@@ -12,11 +12,25 @@
       debug:
         var: image_prune_result.stdout
 
-    - name: Prune unused Docker data, excluding volumes (docker-lxc)
-      shell: docker system prune --all -f
-      register: prune_result
-      changed_when: "'Total reclaimed space: 0B' not in prune_result.stdout"
+    # No `docker system prune` here: it also deletes stopped containers. On
+    # 2026-09-12 the 01:20 update job left five servarr containers created but
+    # not started (gluetun wasn't healthy yet), and the system prune at 02:00
+    # deleted them and their images, turning a retryable failure into a
+    # 10-hour outage. Stopped containers are left for a human to look at.
+    - name: Prune build cache (docker-lxc)
+      shell: docker builder prune -a -f
+      register: builder_prune_result
+      changed_when: builder_prune_result.stdout is not search('Total:\s+0B')
 
-    - name: Show output of prune command
+    - name: Show output of build cache prune
       debug:
-        var: prune_result.stdout
+        var: builder_prune_result.stdout
+
+    - name: Prune unused networks (docker-lxc)
+      shell: docker network prune -f
+      register: network_prune_result
+      changed_when: "'Deleted Networks' in network_prune_result.stdout"
+
+    - name: Show output of network prune
+      debug:
+        var: network_prune_result.stdout
