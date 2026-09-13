@@ -119,19 +119,13 @@ Each service has its own `.env` file for configuration. Ensure these files are p
   ```bash
   docker compose -f servarr/docker-compose.yml down
   ```
-- **Boot order (gluetun)**: radarr, sonarr, prowlarr, bazarr and flaresolverr share
-  gluetun's network namespace. On boot, Docker restarts containers without waiting for
-  gluetun, so some of them fail to start. `servarr/servarr-reconcile.service` runs
-  `docker compose up --no-recreate` after Docker starts, which starts anything that was
-  missed once gluetun is healthy. Install it once on the docker LXC:
-  ```bash
-  systemctl enable /root/docker_services/servarr/servarr-reconcile.service
-  ```
-- **gluetun healthcheck**: the compose file gives gluetun a 2-minute `start_period`
-  instead of the image's 10 seconds, so `docker compose up` waits for the VPN to
-  connect rather than failing with `dependency failed to start: container gluetun
-  is unhealthy`. That failure hit the nightly update job on 2026-09-12 when a new
-  gluetun image was pulled.
+- **No VPN (since 2026-09-13)**: the stack is usenet-only, so radarr, sonarr, prowlarr
+  and bazarr run on the normal `servarr_default` network with their own ports, as the
+  Servarr wiki and TRaSH Guides recommend. gluetun, flaresolverr and the
+  `servarr-reconcile.service` boot workaround were removed with it. Apps reach each
+  other by container name (`http://radarr:7878`, `http://sabnzbd:8081`, and so on).
+- **Plex transcodes** go to a 4 GB tmpfs at `/transcode` (Plex setting "Transcoder
+  temporary directory" = `/transcode`), not the Ceph rootfs.
 
 ---
 

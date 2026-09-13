@@ -1,80 +1,6 @@
 services:
 
 # -----------------------------------------------------------
-# Gluetun Docker Compose Configuration
-# Description: VPN client for Docker containers
-# -----------------------------------------------------------
-  gluetun:
-    image: qmcgaw/gluetun
-    container_name: gluetun
-    labels:
-      - wud.watch.digest=true
-    cap_add:
-      - NET_ADMIN
-    devices:
-      - /dev/net/tun:/dev/net/tun
-    environment:  
-      - LOG_LEVEL=${LOG_LEVEL}
-      - VPN_PORT_FORWARDING=${VPN_PORT_FORWARDING}
-      - VPN_SERVICE_PROVIDER=${VPN_SERVICE_PROVIDER}
-      - VPN_TYPE=${VPN_TYPE}
-      - WIREGUARD_PRIVATE_KEY=${WIREGUARD_PRIVATE_KEY}
-      - SERVER_COUNTRIES=${SERVER_COUNTRIES}
-      - SERVER_CITIES=${SERVER_CITIES}
-      - OPENVPN_USER=${OPENVPN_USER}
-      - OPENVPN_PASSWORD=${OPENVPN_PASSWORD}
-      - SERVER_NAMES=${SERVER_NAMES}
-      - SERVER_HOSTNAMES=${SERVER_HOSTNAMES}
-      - FIREWALL_OUTBOUND_SUBNETS=192.168.10.41/32    # Allow NGINX Proxy Manager IP through the VPN, Gotify
-
-    ports:
-      - 7878:7878                 # Radarr
-      - 8989:8989                 # Sonarr
-      - 9696:9696                 # Prowlarr
-      - 8080:8080                 # qBittorrent WebUI
-      - 6881:6881                 # qBittorrent
-      - 6881:6881/udp             # qBittorrent
-      - "${PORT:-8191}:8191"      # FlareSolverr
-      - 6767:6767                 # Bazarr
-      - 6969:6969                 # Whisparr
-    restart: always
-    # Same check as the image's built-in one, with a longer start_period. The
-    # built-in check allows only 10s before failures count, but the VPN can
-    # take 40s+ to connect, so gluetun went "unhealthy" on its way to healthy
-    # and compose gave up starting the containers that depend on it (nightly
-    # update job, 2026-09-12). Failed checks inside start_period don't count,
-    # so `compose up` now waits for the VPN instead. start_interval keeps
-    # polling every 5s during startup so dependents start as soon as it's up.
-    healthcheck:
-      test: ["CMD-SHELL", "/gluetun-entrypoint healthcheck"]
-      interval: 5s
-      timeout: 5s
-      retries: 3
-      start_period: 2m
-      start_interval: 5s
-
-# -----------------------------------------------------------
-# Flaresolverr Docker Compose Configuration
-# Description: Bypass CAPTCHAs for automated downloads
-# -----------------------------------------------------------
-  flaresolverr:
-    image: ghcr.io/flaresolverr/flaresolverr:latest
-    container_name: flaresolverr
-    labels:
-      - wud.watch.digest=true
-    network_mode: "service:gluetun" # Uses VPN network
-    environment:
-      - LOG_LEVEL=${LOG_LEVEL}
-      - LOG_HTML=${LOG_HTML}
-      - CAPTCHA_SOLVER=${CAPTCHA_SOLVER}
-      - TZ=${TZ}
-    restart: always
-    depends_on:
-      gluetun:
-        condition: service_healthy   # wait for the VPN to be up, not just the container
-        restart: true                # restart this service if compose restarts gluetun
-
-# -----------------------------------------------------------
 # Sabnzbd Docker Compose Configuration
 # Description: Usenet download client
 # -----------------------------------------------------------
@@ -108,7 +34,8 @@ services:
     container_name: radarr
     labels:
       - wud.watch.digest=true
-    network_mode: "service:gluetun" # Uses VPN network
+    ports:
+      - 7878:7878
     environment:
       - PUID=${PUID}
       - PGID=${PGID}
@@ -118,10 +45,6 @@ services:
       - /media/servarr/radarr/config:/config
       - /mnt/qnap/servarr:/data
     restart: always
-    depends_on:
-      gluetun:
-        condition: service_healthy   # wait for the VPN to be up, not just the container
-        restart: true                # restart this service if compose restarts gluetun
 
 # -----------------------------------------------------------
 # Sonarr Docker Compose Configuration
@@ -132,7 +55,8 @@ services:
     container_name: sonarr
     labels:
       - wud.watch.digest=true
-    network_mode: "service:gluetun" # Uses VPN network
+    ports:
+      - 8989:8989
     environment:
       - PUID=${PUID}
       - PGID=${PGID}
@@ -142,10 +66,6 @@ services:
       - /media/servarr/sonarr/config:/config
       - /mnt/qnap/servarr:/data
     restart: always
-    depends_on:
-      gluetun:
-        condition: service_healthy   # wait for the VPN to be up, not just the container
-        restart: true                # restart this service if compose restarts gluetun
 
 # -----------------------------------------------------------
 # Prowlarr Docker Compose Configuration
@@ -156,7 +76,8 @@ services:
     container_name: prowlarr
     labels:
       - wud.watch.digest=true
-    network_mode: "service:gluetun" # Uses VPN network
+    ports:
+      - 9696:9696
     environment:
       - PUID=${PUID}
       - PGID=${PGID}
@@ -165,10 +86,6 @@ services:
     volumes:
       - /media/servarr/prowlarr/config:/config
     restart: unless-stopped
-    depends_on:
-      gluetun:
-        condition: service_healthy   # wait for the VPN to be up, not just the container
-        restart: true                # restart this service if compose restarts gluetun
 
 # -----------------------------------------------------------
 # Bazarr Docker Compose Configuration
@@ -179,20 +96,17 @@ services:
     container_name: bazarr
     labels:
       - wud.watch.digest=true
-    network_mode: "service:gluetun" # Uses VPN network
+    ports:
+      - 6767:6767
     environment:
       - PUID=${PUID}
       - PGID=${PGID}
       - UMASK=${UMASK}
       - TZ=${TZ}
     volumes:
-      - /media/servarr/bazarr/config:/config      
+      - /media/servarr/bazarr/config:/config
       - /mnt/qnap/servarr:/data
     restart: always
-    depends_on:
-      gluetun:
-        condition: service_healthy   # wait for the VPN to be up, not just the container
-        restart: true                # restart this service if compose restarts gluetun
 
 # -----------------------------------------------------------
 # Notifiarr Docker Compose Configuration
@@ -207,6 +121,8 @@ services:
     restart: unless-stopped
     ports:
       - "5454:5454"
+    environment:
+      - TZ=${TZ}
     volumes:
       - /media/servarr/notifiarr/config:/config
       - /var/run/utmp:/var/run/utmp
@@ -307,9 +223,13 @@ services:
       - PLEX_PURGE_CODECS=${PLEX_PURGE_CODECS}
     volumes:
       - /media/servarr/plex/:/config
-      - /media/servarr/plex/transcode:/transcode
       - /mnt/qnap/servarr:/data
       - /root/docker_services/servarr/init-hook-app:/etc/s6-overlay/init-hook-app:ro
+    # Transcodes go to RAM instead of the Ceph rootfs. Plex's "Transcoder
+    # temporary directory" setting must point at /transcode. 4g covers a few
+    # simultaneous 1080p transcodes; raise it if 4K transcoding becomes common.
+    tmpfs:
+      - /transcode:size=4g
     restart: always
 
 # -----------------------------------------------------------
