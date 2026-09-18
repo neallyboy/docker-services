@@ -9,19 +9,19 @@ This repository contains multiple services configured to run using Docker. Below
 ### Run All Services
 To start all services defined in this repository:
 ```bash
-docker compose -f authentik/docker-compose.yml -f changedetection/docker-compose.yml -f dozzle/docker-compose.yml -f gotify/docker-compose.yml -f grafana/docker-compose.yml -f influxdb/docker-compose.yml -f it-tools/docker-compose.yml -f semaphore/docker-compose.yml -f servarr/docker-compose.yml -f speedtest-tracker/docker-compose.yml -f wud/docker-compose.yml up -d
+docker compose -f authentik/docker-compose.yml -f changedetection/docker-compose.yml -f dozzle/docker-compose.yml -f gotify/docker-compose.yml -f grafana/docker-compose.yml -f influxdb/docker-compose.yml -f it-tools/docker-compose.yml -f scrypted/docker-compose.yml -f semaphore/docker-compose.yml -f servarr/docker-compose.yml -f speedtest-tracker/docker-compose.yml -f wud/docker-compose.yml up -d
 ```
 
 ### Stop All Services
 To stop all services:
 ```bash
-docker compose -f authentik/docker-compose.yml -f changedetection/docker-compose.yml -f dozzle/docker-compose.yml -f gotify/docker-compose.yml -f grafana/docker-compose.yml -f influxdb/docker-compose.yml -f it-tools/docker-compose.yml -f semaphore/docker-compose.yml -f servarr/docker-compose.yml -f speedtest-tracker/docker-compose.yml -f wud/docker-compose.yml down
+docker compose -f authentik/docker-compose.yml -f changedetection/docker-compose.yml -f dozzle/docker-compose.yml -f gotify/docker-compose.yml -f grafana/docker-compose.yml -f influxdb/docker-compose.yml -f it-tools/docker-compose.yml -f scrypted/docker-compose.yml -f semaphore/docker-compose.yml -f servarr/docker-compose.yml -f speedtest-tracker/docker-compose.yml -f wud/docker-compose.yml down
 ```
 
 ### Update All Services
 To pull the latest images for all services:
 ```bash
-docker compose -f authentik/docker-compose.yml -f changedetection/docker-compose.yml -f dozzle/docker-compose.yml -f gotify/docker-compose.yml -f grafana/docker-compose.yml -f influxdb/docker-compose.yml -f it-tools/docker-compose.yml -f semaphore/docker-compose.yml -f servarr/docker-compose.yml -f speedtest-tracker/docker-compose.yml -f wud/docker-compose.yml pull
+docker compose -f authentik/docker-compose.yml -f changedetection/docker-compose.yml -f dozzle/docker-compose.yml -f gotify/docker-compose.yml -f grafana/docker-compose.yml -f influxdb/docker-compose.yml -f it-tools/docker-compose.yml -f scrypted/docker-compose.yml -f semaphore/docker-compose.yml -f servarr/docker-compose.yml -f speedtest-tracker/docker-compose.yml -f wud/docker-compose.yml pull
 ```
 
 ---
@@ -234,6 +234,31 @@ Each service has its own `.env` file for configuration. Ensure these files are p
   ```bash
   docker compose -f wud/docker-compose.yml down
   ```
+
+### 12. **Scrypted**
+- **Purpose**: Camera hub. Pulls the Nest cameras from Google Device Access and
+  publishes them to Apple Home (HomeKit) and as RTSP rebroadcast streams that
+  Home Assistant's Generic Camera entries use.
+- **Update Command**:
+  ```bash
+  docker compose -f scrypted/docker-compose.yml pull
+  ```
+- **Start Command**:
+  The start command can be performed after the update command. The containers will be re-created using the latest local container
+  ```bash
+  docker compose -f scrypted/docker-compose.yml up -d
+  ```
+- **Stop Command**:
+  ```bash
+  docker compose -f scrypted/docker-compose.yml down
+  ```
+- **Host networking**: the container uses `network_mode: host` (HomeKit needs mDNS),
+  so the UI is on https://192.168.10.41:10443 and http://192.168.10.41:11080.
+  RTSP rebroadcast ports are set per camera in Scrypted and land on the LXC's IP.
+- **State** (plugins and `scrypted.db`) lives in `scrypted/volume/`, which is
+  gitignored. Back it up: losing it means re-pairing every camera in the Home app.
+- Updated nightly by the Semaphore `update-docker-services` job. A new image
+  recreates the container, so cameras drop out of Apple Home for a minute or two.
 
 ---
 

@@ -102,7 +102,7 @@ deployed.
 
 Current entries in `docker_service_dirs` (`semaphore/vars/docker_services.yml`):
 authentik, changedetection, dozzle, gotify, grafana, influxdb, it-tools,
-servarr, speedtest-tracker, wud.
+scrypted, servarr, speedtest-tracker, wud.
 
 Deliberately **not** in this list: `semaphore` itself (updating semaphore's
 own containers mid-run risks killing the job that's doing the updating —
