@@ -10,6 +10,7 @@ docker_service_dirs:
   - grafana
   - influxdb
   - it-tools
+  - scrutiny
   - scrypted
   - servarr
   - speedtest-tracker

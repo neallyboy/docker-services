@@ -1,0 +1,39 @@
+# Scrutiny hub (web UI + API). SMART data comes from collectors on pve01-03
+# (/opt/scrutiny/bin/scrutiny-collector-metrics, systemd timer), which POST
+# to http://192.168.10.41:8080. Metrics live in the shared influxdb2
+# container under its own org "scrutiny" (buckets metrics, metrics_weekly,
+# metrics_monthly, metrics_yearly, created by Scrutiny on first start).
+# .env holds SCRUTINY_INFLUXDB_TOKEN, an all-access token for that org only.
+# Run with docker compose up -d
+services:
+  scrutiny:
+    image: ghcr.io/analogj/scrutiny:v0.9-web
+    container_name: scrutiny
+    restart: always
+    labels:
+      - wud.watch.digest=true
+    ports:
+      - 8080:8080
+    volumes:
+      - ./config:/opt/scrutiny/config
+    environment:
+      SCRUTINY_WEB_INFLUXDB_HOST: influxdb2
+      SCRUTINY_WEB_INFLUXDB_PORT: "8086"
+      SCRUTINY_WEB_INFLUXDB_ORG: scrutiny
+      SCRUTINY_WEB_INFLUXDB_BUCKET: metrics
+      SCRUTINY_WEB_INFLUXDB_TOKEN: ${SCRUTINY_INFLUXDB_TOKEN}
+      TZ: America/Toronto
+    networks:
+      - default
+      - influxdb
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 20s
+
+networks:
+  influxdb:
+    name: influxdb_default
+    external: true
