@@ -46,8 +46,13 @@ cluster is never mid-upgrade on more than one node simultaneously:
    - refuse to reboot unless `pvecm status` is quorate (cluster nodes only)
    - enable HA maintenance mode on the node (cluster nodes only)
    - reboot and wait for the node to come back (`wait_for_connection`, 600s timeout)
-   - disable HA maintenance mode, then poll `pvecm status` until quorate
-     (12 retries / 10s apart; cluster nodes only)
+   - poll `pvecm status` until quorate (30 retries / 10s apart), then disable
+     HA maintenance mode (6 retries / 10s apart; cluster nodes only). The
+     order matters: `ha-manager` needs quorum and SSH is back before corosync
+     is. Until 2026-09-19 the disable ran first, failed with "no quorum!" on
+     2026-09-15 and left pve02 in maintenance mode for four days. If either
+     step fails, the job fails with a message saying the node is still in
+     maintenance mode and the command to clear it.
 5. After a kernel reboot, fail if the host did not come up on the expected kernel
    (stops the rolling update instead of rebooting that host again on every run)
 6. If a reboot happened on a cluster node, poll `ceph status -f json` until

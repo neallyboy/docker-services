@@ -105,18 +105,36 @@
         timeout: 600
       when: needs_reboot | bool and not is_semaphore_host | bool
 
-    - name: Disable HA maintenance mode
-      ansible.builtin.command: "ha-manager crm-command node-maintenance disable {{ inventory_hostname }}"
+    # ha-manager needs cluster quorum, so leaving maintenance mode has to wait
+    # until the node is back in the cluster. SSH comes up before corosync does:
+    # on 2026-09-15 the disable ran right after the reboot, failed with
+    # "cfs-lock 'domain-ha' error: no quorum!" and left pve02 in maintenance
+    # mode for four days. If the node doesn't rejoin, the job fails here (so
+    # no other node is rebooted) and says the node is still in maintenance.
+    - name: Rejoin the cluster and leave HA maintenance mode
       when: needs_reboot | bool and inventory_hostname in groups['pve_cluster'] and not is_semaphore_host | bool
+      block:
+        - name: Verify cluster quorum after reboot
+          ansible.builtin.command: pvecm status
+          register: quorum_check_after
+          until: quorum_check_after.stdout is search('Quorate:\\s*Yes')
+          retries: 30
+          delay: 10
+          changed_when: false
 
-    - name: Verify cluster quorum after reboot
-      ansible.builtin.command: pvecm status
-      register: quorum_check_after
-      until: quorum_check_after.stdout is search('Quorate:\\s*Yes')
-      retries: 12
-      delay: 10
-      changed_when: false
-      when: needs_reboot | bool and inventory_hostname in groups['pve_cluster'] and not is_semaphore_host | bool
+        - name: Disable HA maintenance mode
+          ansible.builtin.command: "ha-manager crm-command node-maintenance disable {{ inventory_hostname }}"
+          register: ha_maintenance_disable
+          until: ha_maintenance_disable.rc == 0
+          retries: 6
+          delay: 10
+      rescue:
+        - name: Report that the node is still in HA maintenance mode
+          ansible.builtin.fail:
+            msg: >-
+              {{ inventory_hostname }} failed at "{{ ansible_failed_task.name }}" and is still
+              in HA maintenance mode. Once `pvecm status` on it shows Quorate: Yes, run
+              `ha-manager crm-command node-maintenance disable {{ inventory_hostname }}`.
 
     # Gate on Ceph's actual state, not the health status. Accepting HEALTH_WARN
     # let the next node reboot while PGs were still degraded from this one.
