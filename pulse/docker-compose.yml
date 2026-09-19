@@ -1,0 +1,22 @@
+# Pulse: Proxmox VE / PBS monitoring and alerting dashboard.
+# Connects to the cluster over the Proxmox API with a read-only token; the
+# token is created by the setup script Pulse generates in its own UI
+# (Settings > Nodes), so no credentials live in this repo.
+# Pinned to a stable tag: upstream also publishes -beta tags, which the
+# wud.tag.include label below filters out.
+# Run with docker compose up -d
+services:
+  pulse:
+    image: rcourtman/pulse:v6.4.1
+    container_name: pulse
+    restart: always
+    labels:
+      - wud.tag.include=^v\d+\.\d+\.\d+$$
+      - wud.trigger.include=dockercompose.pulse,gotify.local
+    ports:
+      - 7655:7655
+    volumes:
+      - ./data:/data
+    environment:
+      PULSE_DEPLOYMENT_METHOD: docker_compose
+      TZ: America/Toronto

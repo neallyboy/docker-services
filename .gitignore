@@ -5,3 +5,5 @@ gotify/data/
 grafana/data/
 scrypted/volume/
 scrutiny/config/
+pulse/data/
+uptime-kuma/data/

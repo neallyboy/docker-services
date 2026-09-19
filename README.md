@@ -9,19 +9,19 @@ This repository contains multiple services configured to run using Docker. Below
 ### Run All Services
 To start all services defined in this repository:
 ```bash
-docker compose -f authentik/docker-compose.yml -f changedetection/docker-compose.yml -f dozzle/docker-compose.yml -f gotify/docker-compose.yml -f grafana/docker-compose.yml -f influxdb/docker-compose.yml -f it-tools/docker-compose.yml -f scrutiny/docker-compose.yml -f scrypted/docker-compose.yml -f semaphore/docker-compose.yml -f servarr/docker-compose.yml -f speedtest-tracker/docker-compose.yml -f wud/docker-compose.yml up -d
+docker compose -f authentik/docker-compose.yml -f changedetection/docker-compose.yml -f dozzle/docker-compose.yml -f gotify/docker-compose.yml -f grafana/docker-compose.yml -f influxdb/docker-compose.yml -f it-tools/docker-compose.yml -f pulse/docker-compose.yml -f scrutiny/docker-compose.yml -f scrypted/docker-compose.yml -f semaphore/docker-compose.yml -f servarr/docker-compose.yml -f speedtest-tracker/docker-compose.yml -f uptime-kuma/docker-compose.yml -f wud/docker-compose.yml up -d
 ```
 
 ### Stop All Services
 To stop all services:
 ```bash
-docker compose -f authentik/docker-compose.yml -f changedetection/docker-compose.yml -f dozzle/docker-compose.yml -f gotify/docker-compose.yml -f grafana/docker-compose.yml -f influxdb/docker-compose.yml -f it-tools/docker-compose.yml -f scrutiny/docker-compose.yml -f scrypted/docker-compose.yml -f semaphore/docker-compose.yml -f servarr/docker-compose.yml -f speedtest-tracker/docker-compose.yml -f wud/docker-compose.yml down
+docker compose -f authentik/docker-compose.yml -f changedetection/docker-compose.yml -f dozzle/docker-compose.yml -f gotify/docker-compose.yml -f grafana/docker-compose.yml -f influxdb/docker-compose.yml -f it-tools/docker-compose.yml -f pulse/docker-compose.yml -f scrutiny/docker-compose.yml -f scrypted/docker-compose.yml -f semaphore/docker-compose.yml -f servarr/docker-compose.yml -f speedtest-tracker/docker-compose.yml -f uptime-kuma/docker-compose.yml -f wud/docker-compose.yml down
 ```
 
 ### Update All Services
 To pull the latest images for all services:
 ```bash
-docker compose -f authentik/docker-compose.yml -f changedetection/docker-compose.yml -f dozzle/docker-compose.yml -f gotify/docker-compose.yml -f grafana/docker-compose.yml -f influxdb/docker-compose.yml -f it-tools/docker-compose.yml -f scrutiny/docker-compose.yml -f scrypted/docker-compose.yml -f semaphore/docker-compose.yml -f servarr/docker-compose.yml -f speedtest-tracker/docker-compose.yml -f wud/docker-compose.yml pull
+docker compose -f authentik/docker-compose.yml -f changedetection/docker-compose.yml -f dozzle/docker-compose.yml -f gotify/docker-compose.yml -f grafana/docker-compose.yml -f influxdb/docker-compose.yml -f it-tools/docker-compose.yml -f pulse/docker-compose.yml -f scrutiny/docker-compose.yml -f scrypted/docker-compose.yml -f semaphore/docker-compose.yml -f servarr/docker-compose.yml -f speedtest-tracker/docker-compose.yml -f uptime-kuma/docker-compose.yml -f wud/docker-compose.yml pull
 ```
 
 ---
@@ -133,16 +133,16 @@ Each service has its own `.env` file for configuration. Ensure these files are p
 - **Purpose**: Monitors and logs internet speed tests.
 - **Update Command**:
   ```bash
-  docker compose -f speedtest-tracker/docker-compose.yml pull
+  docker compose -f speedtest-tracker/docker-compose.yml -f uptime-kuma/docker-compose.yml pull
   ```
 - **Start Command**:
   The start command can be performed after the update command. The containers will be re-created using the latest local container
   ```bash
-  docker compose -f speedtest-tracker/docker-compose.yml up -d
+  docker compose -f speedtest-tracker/docker-compose.yml -f uptime-kuma/docker-compose.yml up -d
   ```
 - **Stop Command**:
   ```bash
-  docker compose -f speedtest-tracker/docker-compose.yml down
+  docker compose -f speedtest-tracker/docker-compose.yml -f uptime-kuma/docker-compose.yml down
   ```
 
 ---
@@ -241,16 +241,16 @@ Each service has its own `.env` file for configuration. Ensure these files are p
   Home Assistant's Generic Camera entries use.
 - **Update Command**:
   ```bash
-  docker compose -f scrutiny/docker-compose.yml -f scrypted/docker-compose.yml pull
+  docker compose -f pulse/docker-compose.yml -f scrutiny/docker-compose.yml -f scrypted/docker-compose.yml pull
   ```
 - **Start Command**:
   The start command can be performed after the update command. The containers will be re-created using the latest local container
   ```bash
-  docker compose -f scrutiny/docker-compose.yml -f scrypted/docker-compose.yml up -d
+  docker compose -f pulse/docker-compose.yml -f scrutiny/docker-compose.yml -f scrypted/docker-compose.yml up -d
   ```
 - **Stop Command**:
   ```bash
-  docker compose -f scrutiny/docker-compose.yml -f scrypted/docker-compose.yml down
+  docker compose -f pulse/docker-compose.yml -f scrutiny/docker-compose.yml -f scrypted/docker-compose.yml down
   ```
 - **Host networking**: the container uses `network_mode: host` (HomeKit needs mDNS),
   so the UI is on https://192.168.10.41:10443 and http://192.168.10.41:11080.
@@ -274,19 +274,64 @@ Each service has its own `.env` file for configuration. Ensure these files are p
   ```
 - **Update Command**:
   ```bash
-  docker compose -f scrutiny/docker-compose.yml pull
+  docker compose -f pulse/docker-compose.yml -f scrutiny/docker-compose.yml pull
   ```
 - **Start Command**:
   The start command can be performed after the update command. The containers will be re-created using the latest local container
   ```bash
-  docker compose -f scrutiny/docker-compose.yml up -d
+  docker compose -f pulse/docker-compose.yml -f scrutiny/docker-compose.yml up -d
   ```
 - **Stop Command**:
   ```bash
-  docker compose -f scrutiny/docker-compose.yml down
+  docker compose -f pulse/docker-compose.yml -f scrutiny/docker-compose.yml down
   ```
 - Updated nightly by the Semaphore `update-docker-services` job. The `v0.9-web` tag only moves on patch releases;
   a minor or major upgrade is a deliberate tag change here. The collector binaries on the nodes are updated by hand.
+
+---
+
+### 14. **Pulse**
+- **Purpose**: Proxmox VE and PBS monitoring with alerting: node/guest health, storage, backup age, and per-guest
+  thresholds. Complements PDM (which manages) and Grafana (which charts history). `http://192.168.10.41:7655`.
+- **Setup**: open the UI, complete the bootstrap-token first run, then Settings > Nodes and run the generated setup
+  script on a cluster node. That script creates the read-only Proxmox monitoring user and token, so no Proxmox
+  credentials are stored in this repo.
+- **Update Command**:
+  ```bash
+  docker compose -f pulse/docker-compose.yml pull
+  ```
+- **Start Command**:
+  The start command can be performed after the update command. The containers will be re-created using the latest local container
+  ```bash
+  docker compose -f pulse/docker-compose.yml up -d
+  ```
+- **Stop Command**:
+  ```bash
+  docker compose -f pulse/docker-compose.yml down
+  ```
+- Pinned to a stable tag; upstream also ships `-beta` tags, which the `wud.tag.include` label filters out.
+
+---
+
+### 15. **Uptime Kuma**
+- **Purpose**: Uptime and latency checks with their own notifications and history. `http://192.168.10.41:3011`
+  (host port 3011 because semaphore already uses 3001).
+- **Setup**: create the admin account on first open, add monitors **by IP:port** (every `*.lan.digitalflex.ca` name
+  resolves to NPM, so a name-based check only tests NPM), add the Gotify notification, and create a status page if
+  you want the Homepage widget (it reads a status page slug).
+- **Update Command**:
+  ```bash
+  docker compose -f uptime-kuma/docker-compose.yml pull
+  ```
+- **Start Command**:
+  The start command can be performed after the update command. The containers will be re-created using the latest local container
+  ```bash
+  docker compose -f uptime-kuma/docker-compose.yml up -d
+  ```
+- **Stop Command**:
+  ```bash
+  docker compose -f uptime-kuma/docker-compose.yml down
+  ```
 
 ---
 

@@ -1,0 +1,20 @@
+# Uptime Kuma: uptime/latency checks per service, with its own alerting.
+# Host port 3011 because semaphore already publishes 3001.
+# Check services by IP:port, not *.lan.digitalflex.ca names: every one of
+# those resolves to NPM (192.168.10.93), so a name-based check only ever
+# tests NPM. See infra/network.md in homelab-ops.
+# Run with docker compose up -d
+services:
+  uptime-kuma:
+    image: louislam/uptime-kuma:2.5.5
+    container_name: uptime-kuma
+    restart: always
+    labels:
+      - wud.tag.include=^\d+\.\d+\.\d+$$
+      - wud.trigger.include=dockercompose.uptime-kuma,gotify.local
+    ports:
+      - 3011:3001
+    volumes:
+      - ./data:/app/data
+    environment:
+      TZ: America/Toronto
