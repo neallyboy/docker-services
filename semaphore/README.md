@@ -37,7 +37,15 @@ cluster is never mid-upgrade on more than one node simultaneously:
    Semaphore itself runs in LXC 112) is the last host in `[proxmox]`
 1. `apt update` (cache valid 1h)
 2. List and display upgradable packages
-3. `apt full-upgrade` + autoremove/autoclean
+3. `apt full-upgrade` + autoremove/autoclean, then, on hosts with DKMS
+   (only pve02: its corosync/Ceph NICs use the out-of-tree `r8125` driver
+   with `r8169` blacklisted), make sure every DKMS module is built for the
+   kernel the next boot will use: install `proxmox-headers-<kernel>` if
+   missing, run `dkms autoinstall -k <kernel>`, and **fail before HA
+   maintenance mode or any reboot** if a module is still not `installed`.
+   This runs on every run, reboot or not, so a gap is alerted on before an
+   unplanned reboot finds it. Without it, pve02 booted with no cluster or
+   Ceph network on 2026-07-30, 2026-08-26 and 2026-09-15 (8h without quorum)
 4. Decide whether to reboot: `/var/run/reboot-required` exists, **or** the running
    kernel differs from the one the next boot will use (the pinned kernel if any,
    else the newest in `/boot`; skipped in containers). Proxmox kernel packages never

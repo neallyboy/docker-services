@@ -73,6 +73,55 @@
         kernel_target: "{{ kernel_check.stdout | regex_replace('^.*target=(\\S*).*$', '\\1') }}"
         is_semaphore_host: "{{ inventory_hostname in (groups['semaphore_host'] | default([])) }}"
 
+    # pve02's corosync and Ceph NICs need the out-of-tree r8125 driver (DKMS,
+    # r8169 blacklisted). DKMS only builds it when the new kernel's headers
+    # are installed, and apt doesn't always pull them in. When it's missing,
+    # the node boots with no cluster or Ceph network: 2026-07-30, 2026-08-26
+    # and 2026-09-15 (8h without quorum). So, on every run, whether or not a
+    # reboot is due, make sure every DKMS module is built for the kernel the
+    # next boot will use (headers first if needed), and fail before
+    # maintenance mode or any reboot if one is missing. That also stops the
+    # rolling update and alerts. See homelab-ops
+    # runbooks/2026-07-30-ceph-osd-outage-stale-dkms.md
+    - name: Make sure DKMS modules are built for the next boot kernel
+      ansible.builtin.shell: |
+        set -eu
+        if ! command -v dkms >/dev/null || systemd-detect-virt --container --quiet; then
+          echo "DKMS_NONE"; exit 0
+        fi
+        k="$NEXT_KERNEL"
+        [ -e "/boot/vmlinuz-$k" ] || k=$(uname -r)
+        if ! dpkg -s "proxmox-headers-$k" >/dev/null 2>&1; then
+          echo "DKMS_HEADERS_INSTALLED proxmox-headers-$k"
+          DEBIAN_FRONTEND=noninteractive apt-get install -yq -o DPkg::Lock::Timeout=60 "proxmox-headers-$k"
+        fi
+        # Installing headers does not always trigger the build (2026-09-10),
+        # so ask for it explicitly; it is a no-op when already built.
+        dkms autoinstall -k "$k" || true
+        missing=""
+        for mv in $(dkms status | sed 's/[,:].*//' | sort -u); do
+          dkms status "$mv" -k "$k" | grep -q ": installed" || missing="$missing $mv"
+        done
+        if [ -n "$missing" ]; then
+          echo "DKMS_MISSING kernel=$k modules:$missing"
+        else
+          echo "DKMS_OK kernel=$k modules: $(dkms status | sed 's/[,:].*//' | sort -u | tr '\n' ' ')"
+        fi
+      args:
+        executable: /bin/bash
+      environment:
+        NEXT_KERNEL: "{{ kernel_target }}"
+      register: dkms_check
+      changed_when: dkms_check.stdout is search('DKMS_HEADERS_INSTALLED')
+      failed_when: >-
+        dkms_check.rc != 0 or dkms_check.stdout is search('DKMS_MISSING')
+        or dkms_check.stdout is not search('DKMS_(OK|NONE)')
+
+    - name: Show DKMS result
+      ansible.builtin.debug:
+        msg: "{{ dkms_check.stdout_lines | select('match', '^DKMS_') | list }}"
+      when: dkms_check.stdout is not search('DKMS_NONE')
+
     - name: Show if reboot is required
       ansible.builtin.debug:
         msg: "Reboot is required! Node will be restarted. ({{ kernel_check.stdout }}; reboot-required file: {{ reboot_required_file.stat.exists }})"
