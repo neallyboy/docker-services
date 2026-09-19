@@ -17,24 +17,28 @@
         state: directory
 
     - name: Backup config files with permissions preserved
-      synchronize:
-        src: "{{ src_dir }}"
-        dest: "{{ dest_dir }}"
-        archive: yes
-        delete: no
-        rsync_opts:
-          - "--exclude=*.log"
-          - "--exclude=*.db-wal"
-          - "--exclude=*.db-shm"
+      # Plain rsync instead of ansible.posix.synchronize: src and dest are both
+      # local, argv keeps paths with spaces intact, and it avoids the collection's
+      # deprecated module_utils imports.
+      ansible.builtin.command:
+        argv:
+          - rsync
+          - --archive
+          - --stats
+          - --exclude=*.log
+          - --exclude=*.db-wal
+          - --exclude=*.db-shm
           # Plex/Jellyfin scratch dirs churn during playback and scans
-          - "--exclude=/plex/Temp/"
-          - "--exclude=/plex/Cache/"
-          - "--exclude=/plex/Codecs/"
-          - "--exclude=/plex/Updates/"
-          - "--exclude=/plex/Crash Reports/"
-          - "--exclude=/plex/transcode/"
-          - "--exclude=/jellyfin/config/cache/"
-      delegate_to: "{{ inventory_hostname }}"
+          - --exclude=/plex/Temp/
+          - --exclude=/plex/Cache/
+          - --exclude=/plex/Codecs/
+          - --exclude=/plex/Updates/
+          - --exclude=/plex/Crash Reports/
+          - --exclude=/plex/transcode/
+          - --exclude=/jellyfin/config/cache/
+          - "{{ src_dir }}"
+          - "{{ dest_dir }}"
       register: sync_result
+      changed_when: "'Number of regular files transferred: 0' not in sync_result.stdout"
       # rc 24 = files vanished mid-transfer (live app temp files), not a failed backup
       failed_when: sync_result.rc not in [0, 24]
