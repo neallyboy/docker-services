@@ -104,6 +104,42 @@
         label: "{{ item.item }}"
       when: item.stdout is not search('status:\s*running')
 
+    # VS Code Remote-SSH installs a new ~700MB server build in the container on
+    # every VS Code update and never removes the old ones (LXC 103 reached 83%
+    # disk with five of them). Keep the newest build and any build a running
+    # process is using; delete the rest. Runs in every running container on
+    # the node, not just the allowlist, since it only removes these builds.
+    - name: Prune old VS Code server builds
+      ansible.builtin.shell: |
+        pct exec {{ item }} -- sh -c '
+          for dir in /root/.vscode-server/cli/servers /home/*/.vscode-server/cli/servers; do
+            [ -d "$dir" ] || continue
+            ls -1dt "$dir"/Stable-* 2>/dev/null | tail -n +2 | while read -r build; do
+              # [S] keeps grep from matching its own command line
+              name=$(basename "$build")
+              if grep -qs "$dir/[S]${name#S}/" /proc/[0-9]*/cmdline; then
+                echo "IN USE $build"
+              elif [ "{{ lxc_app_update_dry_run | bool | lower }}" = true ]; then
+                echo "WOULD PRUNE $(du -sh "$build" | cut -f1) $build"
+              else
+                echo "PRUNED $(du -sh "$build" | cut -f1) $build"
+                rm -rf "$build"
+              fi
+            done
+          done'
+      loop: "{{ running_cts.stdout_lines | map('int') | difference(lxc_vscode_prune_exclude) | list }}"
+      register: vscode_prune
+      changed_when: vscode_prune.stdout is search('(?m)^PRUNED ')
+      failed_when: false
+
+    - name: VS Code prune summary
+      ansible.builtin.debug:
+        msg: "CT {{ item.item }}: {{ item.stdout_lines if item.stdout_lines else 'nothing to prune' }}{{ ' (rc ' ~ item.rc ~ ': ' ~ item.stderr ~ ')' if item.rc != 0 else '' }}"
+      loop: "{{ vscode_prune.results | default([]) }}"
+      loop_control:
+        label: "{{ item.item }}"
+      when: item.stdout or item.rc != 0
+
 - name: Check the results from every node
   hosts: localhost
   gather_facts: false

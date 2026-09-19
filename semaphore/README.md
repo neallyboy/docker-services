@@ -115,7 +115,13 @@ Updates the apps themselves by running each container's community-scripts
 3. Print the updater's summary table (also in
    `/usr/local/community-scripts/update_apps/<timestamp>.log` on the node)
 4. Check every container it touched is still running
-5. A final play on localhost fails the job (Gotify alert) if any container
+5. Prune old VS Code Remote-SSH server builds (`~/.vscode-server/cli/servers/Stable-*`
+   for root and /home users) in **every** running container on the node, not
+   just the allowlist: keep the newest build and any build a running process
+   uses, delete the rest. Each VS Code update leaves a ~700MB build behind
+   (LXC 103 hit 83% disk from five). Skip a container with
+   `lxc_vscode_prune_exclude`. A prune error is printed but doesn't fail the job.
+6. A final play on localhost fails the job (Gotify alert) if any container
    was FAILED, RESTORED or ERROR, is not running, or a node didn't finish
 
 Deliberately **not** in the allowlist: 110 PDM (apt-managed, host job), 112
@@ -136,6 +142,7 @@ Things to know:
 - Telemetry to community-scripts is turned off with `DIAGNOSTICS=no`.
 - **Dry run:** run the template with extra vars `{"lxc_app_update_dry_run": true}`
   to list installed vs. latest versions without backing up or changing anything.
+  The VS Code prune step then only lists what it would delete (`WOULD PRUNE`).
   Apps that don't use `check_for_gh_release` (pihole, homebridge) show "skipping"
   there; that only means the dry run can't compare their versions.
 

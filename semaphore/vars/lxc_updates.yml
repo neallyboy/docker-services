@@ -24,6 +24,11 @@ lxc_app_update_allow:
   - 106 # prometheus
   - 113 # immich
 
+# update-lxc-apps.yml also prunes old VS Code Remote-SSH server builds in
+# every running container (keeps the newest and any in use). List a CTID here
+# to leave its builds alone.
+lxc_vscode_prune_exclude: []
+
 # PBS storage for the pre-update vzdump backup (same target as the nightly
 # 21:00 backup job, so PBS dedupes it against last night's copy).
 lxc_app_update_backup_storage: pbs-nvme
