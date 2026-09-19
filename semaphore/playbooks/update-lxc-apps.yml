@@ -1,0 +1,126 @@
+---
+# Runs the community-scripts app update (each container's own `update`
+# command) in the containers listed in lxc_app_update_allow, using the
+# upstream PVE LXC Apps Updater (tools/pve/update-apps.sh) on each node:
+#   - vzdump backup of the container to lxc_app_update_backup_storage first
+#   - `export PHS_SILENT=1; update` inside it via pct exec
+#   - if the update exits non-zero, `pct restore --force` from that backup
+# Containers are never rebooted here (var_auto_reboot=no).
+#
+# The updater and each app's ct/<app>.sh are fetched from GitHub on every
+# run, so this executes whatever upstream main holds at the time. The job
+# runs weekly, not nightly, to keep that exposure small.
+#
+# The updater only sees containers on the node it runs on, so it runs once
+# per node, one node at a time (limits concurrent backups to PBS). Results
+# are checked in a final play so a failure on one node never stops the
+# remaining nodes from being updated.
+- name: Update helper-script apps inside guest LXCs
+  hosts: pve_cluster
+  become: true
+  gather_facts: false
+  serial: 1
+  vars_files:
+    - ../vars/lxc_updates.yml
+  vars:
+    updater_url: https://raw.githubusercontent.com/community-scripts/ProxmoxVE/main/tools/pve/update-apps.sh
+    updater_path: /root/update-apps.sh
+  tasks:
+    - name: List running containers on this node
+      ansible.builtin.shell: pct list | awk 'NR>1 && $2=="running" {print $1}'
+      register: running_cts
+      changed_when: false
+
+    - name: Pick the containers to update
+      ansible.builtin.set_fact:
+        cts_to_update: "{{ running_cts.stdout_lines | map('int') | intersect(lxc_app_update_allow) | list }}"
+        app_update_problems: []
+
+    - name: Download the PVE LXC Apps Updater
+      ansible.builtin.get_url:
+        url: "{{ updater_url }}"
+        dest: "{{ updater_path }}"
+        mode: "0755"
+        force: true
+      when: cts_to_update | length > 0
+
+    - name: Run the updater
+      ansible.builtin.command: bash {{ updater_path }}
+      environment:
+        DIAGNOSTICS: "no"
+        TERM: dumb
+        var_container: "{{ cts_to_update | join(',') }}"
+        var_backup: "yes"
+        var_backup_storage: "{{ lxc_app_update_backup_storage }}"
+        var_unattended: "yes"
+        var_skip_confirm: "yes"
+        var_continue_on_error: "yes"
+        var_auto_reboot: "no"
+        var_dry_run: "{{ 'yes' if lxc_app_update_dry_run | bool else 'no' }}"
+      register: updater
+      failed_when: false
+      changed_when: false
+      when: cts_to_update | length > 0
+
+    # The terminal summary has colour codes in it; the log file holds the
+    # same table as plain text.
+    - name: Read the plain-text summary from the updater's log
+      ansible.builtin.shell: sed -n '/^Update finished/,$p' {{ updater.stdout | regex_search('Full log:\s*(\S+)', '\1') | first }}
+      register: summary
+      changed_when: summary.stdout is search('(?m)^\s+\d+\s+\S+\s+OK\s')
+      when:
+        - cts_to_update | length > 0
+        - updater.stdout is search('Full log:')
+
+    - name: Summary
+      ansible.builtin.debug:
+        msg: "{{ summary.stdout_lines }}"
+      when: summary.stdout_lines is defined
+
+    - name: Record problems for the final check
+      ansible.builtin.set_fact:
+        app_update_problems: >-
+          {{
+            ((['updater exited ' ~ updater.rc ~ ': ' ~ (updater.stdout_lines | default([]) | last | default(''))] if updater.rc | default(0) != 0 else [])
+            + (['no summary found in the updater output'] if updater.rc is defined and summary.stdout is not defined else [])
+            + (summary.stdout | default('') | regex_findall('(?m)^\s+\d+\s+\S+\s+(?:FAILED|RESTORED|ERROR)\s.*$') | map('trim') | list))
+            | map('regex_replace', '^', inventory_hostname ~ ': ') | list
+          }}
+
+    # A restore restarts the container; make sure every container this job
+    # touched is still running afterwards.
+    - name: Check the containers are still running
+      ansible.builtin.shell: pct status {{ item }}
+      loop: "{{ cts_to_update }}"
+      register: ct_status
+      changed_when: false
+      failed_when: false
+
+    - name: Record containers that are not running
+      ansible.builtin.set_fact:
+        app_update_problems: "{{ app_update_problems + [inventory_hostname ~ ': CT ' ~ item.item ~ ' is not running after the update'] }}"
+      loop: "{{ ct_status.results | default([]) }}"
+      loop_control:
+        label: "{{ item.item }}"
+      when: item.stdout is not search('status:\s*running')
+
+- name: Check the results from every node
+  hosts: localhost
+  gather_facts: false
+  tasks:
+    - name: Fail the job if any app update failed or had to be restored
+      ansible.builtin.assert:
+        that: problems | length == 0
+        fail_msg: "{{ problems }}"
+        success_msg: "All app updates finished without errors"
+      vars:
+        problems: >-
+          {{
+            groups['pve_cluster']
+            | map('extract', hostvars)
+            | selectattr('app_update_problems', 'defined')
+            | map(attribute='app_update_problems') | flatten
+            | list
+            + (groups['pve_cluster'] | map('extract', hostvars) | rejectattr('app_update_problems', 'defined')
+               | map(attribute='inventory_hostname') | map('regex_replace', '^(.*)$', '\1: did not finish') | list)
+          }}

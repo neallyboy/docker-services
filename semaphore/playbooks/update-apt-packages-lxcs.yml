@@ -1,0 +1,69 @@
+---
+# Upgrades the OS packages inside the guest LXCs. It runs on each Proxmox node
+# and reaches the containers with `pct exec`, so the containers need no SSH
+# key or inventory entry, and a container that moves to another node is still
+# picked up. Only running containers are touched; stopped ones stay stopped.
+# Containers are never rebooted here: ones that ask for it are listed in the
+# summary for a human to restart. The nodes run in parallel: each works
+# through its own containers one at a time, and a failure on one node doesn't
+# stop the others.
+- name: Update OS packages inside guest LXCs
+  hosts: pve_cluster
+  become: true
+  gather_facts: false
+  vars_files:
+    - ../vars/lxc_updates.yml
+  tasks:
+    - name: List running containers on this node
+      ansible.builtin.shell: pct list | awk 'NR>1 && $2=="running" {print $1}'
+      register: running_cts
+      changed_when: false
+
+    - name: Pick the containers to update
+      ansible.builtin.set_fact:
+        cts_to_update: "{{ running_cts.stdout_lines | map('int') | difference(lxc_os_update_exclude) | list }}"
+
+    - name: Upgrade apt packages in each container
+      ansible.builtin.shell: |
+        set -o pipefail
+        ostype=$(pct config {{ item }} | awk '/^ostype:/ {print $2}')
+        case "$ostype" in
+          debian|ubuntu) ;;
+          *) echo "SKIPPED: ostype '$ostype' is not apt-based"; exit 0 ;;
+        esac
+        pct exec {{ item }} -- env DEBIAN_FRONTEND=noninteractive sh -c '
+          apt-get -q update &&
+          apt-get -yq -o DPkg::Lock::Timeout=120 \
+            -o Dpkg::Options::=--force-confdef -o Dpkg::Options::=--force-confold \
+            dist-upgrade &&
+          apt-get -yq autoremove &&
+          apt-get -q autoclean' 2>&1
+        if pct exec {{ item }} -- test -e /var/run/reboot-required; then
+          echo "REBOOT_REQUIRED"
+        fi
+      args:
+        executable: /bin/bash
+      loop: "{{ cts_to_update }}"
+      register: apt_result
+      failed_when: false
+      changed_when: apt_result.stdout is search('(?m)^[1-9][0-9]* upgraded')
+
+    - name: Summary
+      ansible.builtin.debug:
+        msg: >-
+          CT {{ item.item }}:
+          {{ 'FAILED (rc ' ~ item.rc ~ ')' if item.rc != 0
+             else ('SKIPPED' if item.stdout is search('^SKIPPED')
+             else (item.stdout | regex_search('(?m)^\d+ upgraded.*$') | default('no changes', true))) }}{{
+          ' - needs a reboot' if item.stdout is search('REBOOT_REQUIRED') else '' }}
+      loop: "{{ apt_result.results | default([]) }}"
+      loop_control:
+        label: "{{ item.item }}"
+
+    - name: Fail the job if any container's upgrade failed
+      ansible.builtin.assert:
+        that: failed_cts | length == 0
+        fail_msg: "apt upgrade failed in CT {{ failed_cts | join(', ') }} on {{ inventory_hostname }}; see the task output above"
+        quiet: true
+      vars:
+        failed_cts: "{{ apt_result.results | default([]) | rejectattr('rc', 'equalto', 0) | map(attribute='item') | list }}"

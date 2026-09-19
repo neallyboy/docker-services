@@ -9,8 +9,10 @@ playbook via `ansible-playbook`.
 
 ## How it fits together
 
-- **Inventory**: `semaphore/inventory/inventory` — static file, four groups:
-  `proxmox` (pve01-03, pbs), `lxc` (per-container hosts including `docker-lxc`),
+- **Inventory**: `semaphore/inventory/inventory` — static file, five groups:
+  `proxmox` (pve02, pve03, pbs, pve-datacenter-manager, pve01 last),
+  `pve_cluster` (pve01-03), `lxc` (guest LXCs, for reference: the LXC update
+  playbooks reach them with `pct exec` from the nodes, not over SSH),
   `docker` (FQDNs behind the reverse proxy, currently unused by any playbook),
   `hardware` (NAS/switch/gateway, also currently unused by any playbook).
 - **Access key**: all jobs connect as `root` over SSH using a single Semaphore
@@ -18,8 +20,8 @@ playbook via `ansible-playbook`.
   present in `/root/.ssh/authorized_keys` on every host referenced in the
   `proxmox` and `lxc` inventory groups, including `docker-lxc` itself — jobs
   that target `docker-lxc` still connect over SSH like any other host.
-- **Templates vs. playbooks**: 4 distinct playbook files, 4 Semaphore
-  templates — one template per playbook. See the table below.
+- **Templates vs. playbooks**: 6 distinct playbook files, 6 Semaphore
+  templates — one template per playbook. See the sections below.
 - **Schedule timezone**: `America/Toronto` (`SEMAPHORE_SCHEDULE_TIMEZONE`).
 - **Alerting**: every job failure posts to Gotify (`SEMAPHORE_GOTIFY_URL`).
 
@@ -69,6 +71,73 @@ status can read `HEALTH_ERR` for reasons that do not affect data (the
 `AUTH_INSECURE_*` key-type checks), which would block the job. See the
 homelab-ops runbook
 `runbooks/2026-09-10-rolling-upgrade-kernel-ceph-gpu-card-renumber.md`.
+
+### `update-apt-packages-lxcs.yml`
+**Template:** `update-apt-packages-lxcs` · **Schedule:** daily 02:30 · **Targets:** `pve_cluster` (pve01-03), then every running guest LXC on each node via `pct exec`
+
+Upgrades the OS packages inside the guest containers. Before 2026-09-19 nothing
+did: `update-apt-packages-pve-hosts` only covers the Proxmox hosts, PBS and PDM.
+
+1. List the running containers on the node (`pct list`); stopped ones are left alone
+2. Drop the CTIDs in `lxc_os_update_exclude` (`semaphore/vars/lxc_updates.yml`):
+   - 110 PDM: already upgraded by the 03:00 host job
+   - 112 docker: runs Semaphore; a docker-ce upgrade restarts dockerd and kills
+     the job doing the upgrade. Update it by hand.
+3. For each remaining Debian/Ubuntu container: `apt-get update`, `dist-upgrade`
+   (keeping existing config files), `autoremove`, `autoclean`
+4. Print one summary line per container (packages upgraded, and whether
+   `/var/run/reboot-required` exists). **Containers are never rebooted**; restart
+   the ones flagged when convenient.
+5. Fail the job (Gotify alert) if any container's upgrade failed
+
+The three nodes run in parallel, so a failure on one doesn't stop the others.
+A new container is picked up automatically; to leave one out, add its CTID to
+`lxc_os_update_exclude`. Runs at 02:30 so it finishes before the 03:00 host
+job starts rebooting nodes.
+
+### `update-lxc-apps.yml`
+**Template:** `update-lxc-apps` · **Schedule:** weekly, Saturday 10:00 · **Targets:** `pve_cluster` (pve01-03), one node at a time
+
+Updates the apps themselves by running each container's community-scripts
+`update` command, using the upstream
+[PVE LXC Apps Updater](https://github.com/community-scripts/ProxmoxVE/blob/main/tools/pve/update-apps.sh)
+(`tools/pve/update-apps.sh`) on each node:
+
+1. Pick the running containers on the node that are in `lxc_app_update_allow`
+   (`semaphore/vars/lxc_updates.yml`): 100 pihole, 101 nginxproxymanager,
+   102 stirling-pdf, 103 homepage, 105 homebridge, 106 prometheus, 113 immich
+2. Download `update-apps.sh` to `/root/update-apps.sh` on the node and run it
+   unattended. For each container it:
+   - backs it up with `vzdump` to `pbs-nvme` (`lxc_app_update_backup_storage`)
+   - runs `export PHS_SILENT=1; update` inside it
+   - if the update exits non-zero, runs `pct restore --force` from that backup
+     and starts it again
+3. Print the updater's summary table (also in
+   `/usr/local/community-scripts/update_apps/<timestamp>.log` on the node)
+4. Check every container it touched is still running
+5. A final play on localhost fails the job (Gotify alert) if any container
+   was FAILED, RESTORED or ERROR, is not running, or a node didn't finish
+
+Deliberately **not** in the allowlist: 110 PDM (apt-managed, host job), 112
+docker (runs Semaphore), 114 homelabhero (not a community-scripts container),
+115 homeassistant (HA releases break integrations; update it by hand).
+Containers are never rebooted (`var_auto_reboot=no`). SKIPPED results (an app
+that needs interactive mode, is under-provisioned, or is low on disk) don't
+fail the job but show in the summary.
+
+Things to know:
+- The updater and each app's `ct/<app>.sh` are fetched from GitHub main on
+  every run, so the job runs whatever upstream holds that day. It runs weekly,
+  in the daytime, so someone is around if an update breaks an app.
+- `pct restore --force` replaces the whole container, including its
+  snapshots (100, 105 and 106 still have `pre-debian13-upgrade`). None of the
+  allowlisted containers have extra mount points, so the backup covers
+  everything; check that before adding one that does.
+- Telemetry to community-scripts is turned off with `DIAGNOSTICS=no`.
+- **Dry run:** run the template with extra vars `{"lxc_app_update_dry_run": true}`
+  to list installed vs. latest versions without backing up or changing anything.
+  Apps that don't use `check_for_gh_release` (pihole, homebridge) show "skipping"
+  there; that only means the dry run can't compare their versions.
 
 ### `update-docker-services.yml`
 **Template:** `update-docker-services` · **Schedule:** daily 01:20 · **Targets:** `docker-lxc` only

@@ -23,19 +23,19 @@ pve02
 pve03
 
 [lxc]
-homarr ansible_host=192.168.10.202
-homeassistant ansible_host=192.168.10.128
-homebridge ansible_host=192.168.10.149
-homepage ansible_host=192.168.10.9
-meshcentral ansible_host=192.168.10.52
-n8n ansible_host=192.168.10.161
-nginx ansible_host=192.168.10.93
-pihole ansible_host=192.168.10.55
-docker-lxc ansible_host=192.168.10.41
-prometheus ansible_host=192.168.10.64
-pve-scripts-local ansible_host=192.168.10.126
-stirling-pdf ansible_host=192.168.10.233
-wordpress ansible_host=192.168.10.159
+# Guest LXCs (CTID in the comment). No playbook connects to these over SSH:
+# update-apt-packages-lxcs and update-lxc-apps reach them from the Proxmox
+# nodes with pct exec, configured by CTID in vars/lxc_updates.yml.
+docker-lxc ansible_host=192.168.10.41      # 112
+homeassistant ansible_host=192.168.10.126  # 115
+homebridge ansible_host=192.168.10.149     # 105
+homelabhero ansible_host=192.168.10.10     # 114
+homepage ansible_host=192.168.10.9         # 103
+immich ansible_host=192.168.10.244         # 113
+nginx ansible_host=192.168.10.93           # 101
+pihole ansible_host=192.168.10.55          # 100
+prometheus ansible_host=192.168.10.64      # 106
+stirling-pdf ansible_host=192.168.10.233   # 102
 
 [docker]
 auth.lan.digitalflex.ca

@@ -1,0 +1,33 @@
+---
+# Guest LXC update settings for update-apt-packages-lxcs.yml and
+# update-lxc-apps.yml. Both playbooks run on the Proxmox nodes and reach the
+# containers with `pct exec`, so containers are listed by CTID, not hostname.
+
+# Every running container on pve01-03 gets `apt-get dist-upgrade` except these.
+lxc_os_update_exclude:
+  - 110 # proxmox-datacenter-manager: update-apt-packages-pve-hosts already upgrades it
+  - 112 # docker: runs Semaphore; a docker-ce upgrade restarts dockerd and kills the job doing the upgrade
+
+# Only these containers get the community-scripts app update (their `update`
+# command). Each one is backed up first and restored from that backup if the
+# update fails. Deliberately left out:
+#   110 PDM            apt-managed, covered by update-apt-packages-pve-hosts
+#   112 docker         runs Semaphore (see above); stacks are updated by update-docker-services
+#   114 homelabhero    not a community-scripts container, no `update` command
+#   115 homeassistant  HA releases break integrations; update it by hand
+lxc_app_update_allow:
+  - 100 # pihole
+  - 101 # nginxproxymanager
+  - 102 # stirling-pdf
+  - 103 # homepage
+  - 105 # homebridge
+  - 106 # prometheus
+  - 113 # immich
+
+# PBS storage for the pre-update vzdump backup (same target as the nightly
+# 21:00 backup job, so PBS dedupes it against last night's copy).
+lxc_app_update_backup_storage: pbs-nvme
+
+# Set to true (Semaphore extra vars: {"lxc_app_update_dry_run": true}) to only
+# report installed vs. latest versions without backing up or updating anything.
+lxc_app_update_dry_run: false
