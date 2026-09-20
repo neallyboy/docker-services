@@ -1,0 +1,111 @@
+---
+# Keeps /opt/scrutiny/bin/scrutiny-collector-metrics on pve01-03 up to date.
+#
+# The collector is a release binary, not a package: apt and the LXC app
+# updater never touch it, so without this job it stays on whatever version
+# was installed by hand (v0.9.4 on 2026-09-19).
+#
+# The job asks GitHub for the latest release, compares it with the installed
+# `--version`, and only then downloads. The downloaded file is verified
+# against the sha256 digest GitHub reports for that exact asset before it
+# replaces the running binary, so a tampered or truncated download fails the
+# job instead of being installed. Nothing is restarted: the collector is a
+# oneshot run by scrutiny-collector.timer, so the new binary is used on the
+# next tick. The final play runs it once to prove the new version works.
+#
+# Set scrutiny_collector_check_only=true for a dry run (reports, never writes).
+- name: Update the Scrutiny SMART collector on the Proxmox nodes
+  hosts: pve_cluster
+  become: true
+  gather_facts: false
+  vars:
+    scrutiny_collector_bin: /opt/scrutiny/bin/scrutiny-collector-metrics
+    scrutiny_collector_config: /opt/scrutiny/config/collector.yaml
+    scrutiny_collector_asset: scrutiny-collector-metrics-linux-amd64
+    scrutiny_collector_repo: AnalogJ/scrutiny
+    scrutiny_collector_check_only: false
+  tasks:
+    - name: Read the installed collector version
+      ansible.builtin.command: "{{ scrutiny_collector_bin }} --version"
+      register: installed_raw
+      changed_when: false
+      failed_when: false
+
+    - name: Stop if the collector is not installed on this node
+      ansible.builtin.meta: end_host
+      when: installed_raw.rc != 0
+
+    - name: Parse the installed version
+      ansible.builtin.set_fact:
+        installed_version: "{{ installed_raw.stdout | regex_search('version ([0-9]+\\.[0-9]+\\.[0-9]+)', '\\1') | first }}"
+
+    - name: Ask GitHub for the latest release
+      ansible.builtin.uri:
+        url: "https://api.github.com/repos/{{ scrutiny_collector_repo }}/releases/latest"
+        return_content: true
+      register: release
+      delegate_to: localhost
+      become: false
+      run_once: true
+
+    - name: Pick the version and the asset digest
+      ansible.builtin.set_fact:
+        latest_version: "{{ release.json.tag_name | regex_replace('^v', '') }}"
+        latest_asset: "{{ release.json.assets | selectattr('name', 'equalto', scrutiny_collector_asset) | list | first }}"
+      run_once: true
+
+    - name: Fail if the release has no digest to verify against
+      ansible.builtin.assert:
+        that: latest_asset.digest is defined and latest_asset.digest.startswith('sha256:')
+        fail_msg: "release {{ latest_version }} has no sha256 digest for {{ scrutiny_collector_asset }}, refusing to install unverified"
+      run_once: true
+
+    - name: Report
+      ansible.builtin.debug:
+        msg: "{{ inventory_hostname }}: installed {{ installed_version }}, latest {{ latest_version }}"
+
+    - name: Update the collector
+      when:
+        - installed_version is version(latest_version, '<')
+        - not scrutiny_collector_check_only | bool
+      block:
+        - name: Download the new collector
+          ansible.builtin.get_url:
+            url: "{{ latest_asset.browser_download_url }}"
+            dest: /tmp/scrutiny-collector-metrics.new
+            checksum: "{{ latest_asset.digest }}"
+            mode: "0755"
+
+        - name: Install it over the old binary
+          ansible.builtin.copy:
+            src: /tmp/scrutiny-collector-metrics.new
+            dest: "{{ scrutiny_collector_bin }}"
+            remote_src: true
+            mode: "0755"
+            owner: root
+            group: root
+
+        - name: Confirm the new binary reports the expected version
+          ansible.builtin.command: "{{ scrutiny_collector_bin }} --version"
+          register: after_raw
+          changed_when: false
+
+        - name: Fail if the version did not change as expected
+          ansible.builtin.assert:
+            that: latest_version in after_raw.stdout
+            fail_msg: "{{ inventory_hostname }}: expected {{ latest_version }}, got {{ after_raw.stdout }}"
+
+        - name: Run the collector once so the dashboard reflects the new build
+          ansible.builtin.command: "systemctl start scrutiny-collector.service"
+          changed_when: true
+
+        - name: Check that run succeeded
+          ansible.builtin.command: "systemctl show scrutiny-collector.service -p Result --value"
+          register: run_result
+          changed_when: false
+          failed_when: run_result.stdout != "success"
+      always:
+        - name: Remove the download
+          ansible.builtin.file:
+            path: /tmp/scrutiny-collector-metrics.new
+            state: absent

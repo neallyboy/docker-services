@@ -335,6 +335,22 @@ Each service has its own `.env` file for configuration. Ensure these files are p
 
 ---
 
+## Semaphore playbooks
+
+`semaphore/playbooks/` holds the Ansible that Semaphore runs (from its own
+clone of this repo, so a push is live on the next run). Templates and
+schedules are created by hand in the Semaphore UI.
+
+- `update-scrutiny-collector.yml` (new 2026-09-19, suggested schedule: weekly,
+  alongside `update-lxc-apps`): updates `/opt/scrutiny/bin/scrutiny-collector-metrics`
+  on pve01-03. The collector is a GitHub release binary, so no package manager
+  updates it. The job compares the installed `--version` with the latest
+  release, verifies the download against the sha256 digest GitHub reports for
+  that asset, installs it, then runs the collector once to prove the new build
+  works. Dry run: extra var `scrutiny_collector_check_only=true`.
+
+---
+
 ## General Instructions
 
 ### Prerequisites
