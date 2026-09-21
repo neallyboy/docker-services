@@ -138,7 +138,7 @@
       loop: "{{ vscode_prune.results | default([]) }}"
       loop_control:
         label: "{{ item.item }}"
-      when: item.stdout or item.rc != 0
+      when: item.stdout | default('') | length > 0 or item.rc | default(0) != 0
 
 - name: Check the results from every node
   hosts: localhost
