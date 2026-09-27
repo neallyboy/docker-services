@@ -18,12 +18,11 @@ services:
       - UMASK=${UMASK}
       - TZ=${TZ}
       - WEBUI_PORTS=8081/tcp,8081/udp
-      - ARGS
     volumes:
       - /media/servarr/sabnzbd/config:/config
       - /mnt/sabnzbd-incomplete/incomplete:/incomplete-fast
       - /mnt/qnap/servarr/usenet:/data/usenet
-    restart: always
+    restart: unless-stopped
 
 # -----------------------------------------------------------
 # Radarr Docker Compose Configuration
@@ -44,7 +43,7 @@ services:
     volumes:
       - /media/servarr/radarr/config:/config
       - /mnt/qnap/servarr:/data
-    restart: always
+    restart: unless-stopped
 
 # -----------------------------------------------------------
 # Sonarr Docker Compose Configuration
@@ -65,7 +64,7 @@ services:
     volumes:
       - /media/servarr/sonarr/config:/config
       - /mnt/qnap/servarr:/data
-    restart: always
+    restart: unless-stopped
 
 # -----------------------------------------------------------
 # Prowlarr Docker Compose Configuration
@@ -106,7 +105,7 @@ services:
     volumes:
       - /media/servarr/bazarr/config:/config
       - /mnt/qnap/servarr:/data
-    restart: always
+    restart: unless-stopped
 
 # -----------------------------------------------------------
 # Notifiarr Docker Compose Configuration
@@ -166,7 +165,7 @@ services:
       - TZ=${TZ}
     volumes:
       - /media/servarr/seerr/config:/config
-    restart: always
+    restart: unless-stopped
 
 # -----------------------------------------------------------
 # Jellyfin Docker Compose Configuration
@@ -190,10 +189,8 @@ services:
       - /mnt/qnap/servarr:/data
     ports:
       - 8096:8096
-      - 8920:8920     #optional
       - 7359:7359/udp #optional
-      - 1900:1900/udp #optional
-    restart: always
+    restart: unless-stopped
 
 # -----------------------------------------------------------
 # Plex Docker Compose Configuration
@@ -216,7 +213,6 @@ services:
       - PGID=${PGID}
       - UMASK=${UMASK}
       - TZ=${TZ}
-      - PLEX_CLAIM_TOKEN=${PLEX_CLAIM_TOKEN}
       - PLEX_ADVERTISE_URL=${PLEX_ADVERTISE_URL}
       - PLEX_NO_AUTH_NETWORKS=${PLEX_NO_AUTH_NETWORKS}
       - PLEX_BETA_INSTALL=${PLEX_BETA_INSTALL}
@@ -230,7 +226,7 @@ services:
     # simultaneous 1080p transcodes; raise it if 4K transcoding becomes common.
     tmpfs:
       - /transcode:size=4g
-    restart: always
+    restart: unless-stopped
 
 # -----------------------------------------------------------
 # Tautulli Docker Compose Configuration
@@ -251,4 +247,4 @@ services:
       - WEBUI_PORTS=8181/tcp,8181/udp
     volumes:
       - /media/servarr/tautulli/config:/config
-    restart: always
+    restart: unless-stopped
