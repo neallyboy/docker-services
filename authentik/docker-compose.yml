@@ -15,6 +15,9 @@ services:
       - pg_isready -d $${POSTGRES_DB} -U $${POSTGRES_USER}
       timeout: 5s
     image: docker.io/library/postgres:16-alpine
+    labels:
+    - wud.tag.include=^16-alpine$$
+    - wud.watch.digest=true
     restart: unless-stopped
     volumes:
     - database:/var/lib/postgresql/data

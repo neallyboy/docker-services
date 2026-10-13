@@ -14,6 +14,9 @@ services:
   mysql:
     restart: unless-stopped
     image: mysql:8.0
+    labels:
+      - wud.tag.include=^8\.0$$
+      - wud.watch.digest=true
     hostname: mysql
     volumes:
       - semaphore-mysql:/var/lib/mysql

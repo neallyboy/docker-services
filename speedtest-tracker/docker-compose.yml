@@ -53,5 +53,7 @@ services:
             timeout: 5s
         labels:
             - 'wud.display.name=speedtest-tracker-mariadb'
+            - 'wud.tag.include=^11$$'
+            - 'wud.watch.digest=true'
 volumes:
   speedtest-db:
