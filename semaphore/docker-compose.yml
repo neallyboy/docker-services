@@ -29,7 +29,7 @@ services:
     restart: unless-stopped
     ports:
       - 3001:3000
-    image: semaphoreui/semaphore:v2.19.14
+    image: semaphoreui/semaphore:v2.19.16
     labels:
       - wud.trigger.include=dockercompose.semaphore,gotify.local
       - wud.watch.digest=true
