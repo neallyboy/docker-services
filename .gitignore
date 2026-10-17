@@ -7,3 +7,5 @@ scrypted/volume/
 scrutiny/config/
 pulse/data/
 uptime-kuma/data/
+authentik/data/
+dozzle/data/
